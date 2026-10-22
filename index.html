@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>XENO</title>
   
-  <!-- 高級フォント (Cinzel × しっぽり明朝) -->
+  <!-- フォント (Cinzel × しっぽり明朝) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Shippori+Mincho:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Shippori+Mincho:wght@500;700;800&display=swap" rel="stylesheet">
 
-  <!-- 超高速リアルタイム通信 (MQTT over WebSocket) -->
+  <!-- MQTT 高速通信ライブラリ -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
   <style>
@@ -35,13 +35,13 @@
 
     /* ヘッダー */
     .header {
-      height: 52px;
+      height: 48px;
       background: rgba(10, 12, 16, 0.98);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 24px;
+      padding: 0 20px;
     }
     .logo {
       font-family: 'Cinzel', serif;
@@ -56,54 +56,50 @@
     /* ボタン */
     .btn {
       font-family: 'Shippori Mincho', serif;
-      padding: 10px 18px;
+      padding: 9px 16px;
       font-size: 13px;
       font-weight: 700;
       border-radius: 4px;
       cursor: pointer;
       border: 1px solid transparent;
       transition: all 0.2s ease;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.05em;
     }
     .btn-gold {
       background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 60%, var(--gold-dark) 100%);
       color: #000;
       border-color: #ffd700;
     }
-    .btn-gold:hover:not(:disabled) {
-      filter: brightness(1.2);
-      transform: translateY(-1px);
-    }
+    .btn-gold:hover:not(:disabled) { filter: brightness(1.15); transform: translateY(-1px); }
     .btn-primary { background: #1a273b; color: #fff; border-color: #3b82f6; }
     .btn-primary:hover:not(:disabled) { background: #243550; }
     .btn-secondary { background: #171b22; color: #cbd5e0; border-color: #374151; }
-    .btn-secondary:hover:not(:disabled) { background: #222936; }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    /* 画面切り替え */
+    /* 画面コンテナ */
     .screen {
-      min-height: calc(100vh - 52px);
+      min-height: calc(100vh - 48px);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 15px;
     }
     .hidden { display: none !important; }
 
-    /* ロビーパネル */
+    /* ロビー */
     .lobby-card {
       background: var(--panel);
       border: 1px solid var(--border);
       box-shadow: 0 20px 40px rgba(0,0,0,0.9), 0 0 20px rgba(212, 175, 55, 0.15);
       border-radius: 8px;
-      padding: 36px 32px;
-      max-width: 440px;
+      padding: 32px 28px;
+      max-width: 420px;
       width: 100%;
     }
     .title {
       font-family: 'Cinzel', serif;
       text-align: center;
-      font-size: 34px;
+      font-size: 36px;
       font-weight: 900;
       letter-spacing: 8px;
       margin-bottom: 24px;
@@ -113,14 +109,8 @@
     }
 
     .input-group { margin-bottom: 16px; }
-    .input-group label {
-      display: block;
-      font-size: 12px;
-      color: #9ca3af;
-      margin-bottom: 6px;
-      font-weight: 700;
-    }
-    input[type="text"], select {
+    .input-group label { display: block; font-size: 12px; color: #9ca3af; margin-bottom: 6px; font-weight: 700; }
+    input[type="text"] {
       width: 100%;
       padding: 11px 14px;
       background: #090c10;
@@ -130,36 +120,14 @@
       font-size: 15px;
       font-family: 'Shippori Mincho', serif;
     }
-    input[type="text"]:focus, select:focus {
-      outline: none;
-      border-color: var(--gold);
-    }
-    .btn-row { display: flex; gap: 10px; margin: 16px 0 10px; }
+    input[type="text"]:focus { outline: none; border-color: var(--gold); }
+    .btn-row { display: flex; gap: 10px; margin-top: 20px; }
     .btn-row .btn { flex: 1; }
-    .divider { border: 0; border-top: 1px dashed rgba(212, 175, 55, 0.25); margin: 20px 0; }
-
-    /* リアルタイムログ窓 */
-    .connection-console {
-      background: #050608;
-      border: 1px solid #1f2937;
-      border-radius: 4px;
-      padding: 10px;
-      margin-top: 16px;
-      font-family: monospace;
-      font-size: 11px;
-      color: #9ca3af;
-      max-height: 80px;
-      overflow-y: auto;
-      line-height: 1.5;
-    }
-    .log-ok { color: #10b981; }
-    .log-warn { color: var(--gold); }
-    .log-err { color: #ef4444; }
 
     /* 待機ルーム */
     .room-id-box {
       background: #090c10;
-      padding: 14px;
+      padding: 12px 16px;
       border: 1px solid var(--border);
       border-radius: 4px;
       margin: 16px 0;
@@ -183,7 +151,7 @@
     /* プレイマット (直下の mat.jpg を使用) */
     .playmat {
       width: 100vw;
-      height: calc(100vh - 52px);
+      height: calc(100vh - 48px);
       background-color: #07090c;
       background-image: url('mat.jpg');
       background-size: cover;
@@ -191,12 +159,12 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 12px;
+      padding: 10px;
       overflow: hidden;
       position: relative;
     }
 
-    /* 対戦相手エリア */
+    /* 対戦相手エリア（上部） */
     .opponents-container {
       display: flex;
       justify-content: space-around;
@@ -208,7 +176,7 @@
       border: 1px solid #374151;
       border-radius: 6px;
       padding: 8px 12px;
-      min-width: 140px;
+      min-width: 130px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -222,17 +190,17 @@
     .opponent-box.eliminated { opacity: 0.3; filter: grayscale(1); }
     .opp-name { font-size: 13px; font-weight: 700; color: #cbd5e0; margin-bottom: 6px; }
     .opp-cards { display: flex; gap: 5px; margin-bottom: 6px; }
-    .opp-discard { display: flex; gap: 4px; overflow-x: auto; max-width: 170px; }
+    .opp-discard { display: flex; gap: 4px; overflow-x: auto; max-width: 160px; }
 
-    /* 中央テーブル（山札・転生札・ログ） */
+    /* 中央エリア（山札・転生札・ログ） */
     .center-table {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 30px;
-      margin: 10px 0;
+      gap: 25px;
+      margin: 6px 0;
     }
-    .deck-zone { display: flex; align-items: center; gap: 20px; }
+    .deck-zone { display: flex; align-items: center; gap: 18px; }
     .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .zone-label { font-size: 11px; color: #9ca3af; letter-spacing: 1px; }
 
@@ -250,15 +218,16 @@
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       background-color: #111827;
     }
-    .card:hover {
+    .card.my-playable:hover {
       transform: translateY(-8px) scale(1.04);
-      box-shadow: 0 10px 20px rgba(212, 175, 55, 0.55);
+      box-shadow: 0 10px 20px rgba(212, 175, 55, 0.6);
+      border-color: var(--gold-light);
     }
-    .card.disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+    .card.disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
 
     .card-mini {
-      width: 44px;
-      height: 65px;
+      width: 42px;
+      height: 62px;
       border-radius: 3px;
       border: 1px solid #4b5563;
       background-size: cover;
@@ -315,22 +284,22 @@
     }
 
     .game-log-box {
-      width: 320px;
-      height: 110px;
+      width: 300px;
+      height: 100px;
       background: rgba(8, 10, 14, 0.92);
       border: 1px solid #374151;
       border-radius: 6px;
-      padding: 10px;
+      padding: 8px;
       overflow-y: auto;
       font-size: 12px;
       display: flex;
       flex-direction: column-reverse;
     }
-    .log-entry { margin-bottom: 5px; line-height: 1.45; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .log-entry { margin-bottom: 4px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.06); }
 
-    /* 自分エリア */
+    /* 自分エリア（下部：自分の端末では絶対に自分がここに来る） */
     .my-area {
-      background: rgba(14, 17, 23, 0.95);
+      background: rgba(14, 17, 23, 0.96);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 10px 18px;
@@ -345,8 +314,9 @@
       margin-bottom: 6px;
       width: 100%;
     }
-    .player-name { font-size: 16px; font-weight: 800; color: var(--gold-light); }
+    .player-name { font-size: 15px; font-weight: 800; color: var(--gold-light); }
     .player-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #1f2937; }
+    .player-badge.active-turn { background: var(--gold); color: #000; font-weight: 800; }
     .guard-badge { background: #1d4ed8; color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; }
     
     .discard-line {
@@ -354,7 +324,7 @@
       gap: 6px;
       overflow-x: auto;
       max-width: 95%;
-      min-height: 70px;
+      min-height: 66px;
       margin-bottom: 8px;
       padding: 2px;
       border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -365,7 +335,7 @@
       position: absolute;
       top: 3px;
       left: 3px;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       border: 1px solid var(--gold);
       color: var(--gold-light);
       font-family: 'Cinzel', serif;
@@ -393,7 +363,7 @@
       box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
       border-radius: 8px;
       padding: 24px;
-      max-width: 520px;
+      max-width: 500px;
       width: 92%;
     }
     .modal-body { margin: 16px 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
@@ -419,7 +389,7 @@
         <h1 class="title">XENO</h1>
 
         <div class="input-group">
-          <label>プレイヤー名</label>
+          <label>あなたのプレイヤー名</label>
           <input type="text" id="playerNameInput" maxlength="10" value="プレイヤー1">
         </div>
 
@@ -428,30 +398,9 @@
           <input type="text" id="customRoomIdInput" placeholder="例: 1124" value="1124">
         </div>
 
-        <div>
-          <div class="btn-row">
-            <button id="createRoomBtn" class="btn btn-gold">部屋を作る</button>
-            <button id="joinRoomBtn" class="btn btn-primary">部屋に参加する</button>
-          </div>
-
-          <hr class="divider">
-
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:12px; color:#9ca3af;">1台で対面プレイ</span>
-            <div style="display:flex; gap:8px;">
-              <select id="localPlayerCount" style="width:90px; padding:6px;">
-                <option value="2">2人</option>
-                <option value="3">3人</option>
-                <option value="4">4人</option>
-              </select>
-              <button id="startLocalBtn" class="btn btn-secondary" style="padding:6px 12px;">開始</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- リアルタイム通信ログ -->
-        <div class="connection-console" id="connectionConsole">
-          <div>[システム] 準備完了。部屋を作るか参加してください。</div>
+        <div class="btn-row">
+          <button id="createRoomBtn" class="btn btn-gold">部屋を作る</button>
+          <button id="joinRoomBtn" class="btn btn-primary">部屋に参加する</button>
         </div>
       </div>
     </div>
@@ -484,8 +433,10 @@
     <!-- メインゲーム画面 -->
     <div id="gameScreen" class="screen hidden">
       <div class="playmat" id="playmat">
+        <!-- 上部：対戦相手エリア（相手の手札は絶対に裏向き） -->
         <div class="opponents-container" id="opponentsArea"></div>
 
+        <!-- 中央：山札・転生札・ログ -->
         <div class="center-table">
           <div class="deck-zone">
             <div class="deck-wrapper">
@@ -504,11 +455,12 @@
           <div class="game-log-box" id="logBox"></div>
         </div>
 
+        <!-- 下部：自分のエリア（自分の端末では常に自分の手札のみが表示） -->
         <div class="my-area">
           <div class="player-info-bar">
             <span class="player-name" id="myPlayerName">自分</span>
             <span class="player-badge" id="myStatusBadge">待機中</span>
-            <span class="guard-badge hidden" id="myGuardBadge">🛡️ 乙女の守護</span>
+            <span class="guard-badge hidden" id="myGuardBadge">🛡️ 守護</span>
           </div>
           <div class="discard-line" id="myDiscardLine"></div>
           <div class="hand-container" id="myHand"></div>
@@ -523,14 +475,6 @@
         <p id="modalDesc" style="font-size:13px; color:#cbd5e0; margin-top:4px;">対象を選択してください</p>
         <div id="modalBody" class="modal-body"></div>
         <div class="modal-actions" id="modalActions"></div>
-      </div>
-    </div>
-
-    <div id="passTurnModal" class="modal-overlay hidden">
-      <div class="modal-content" style="text-align:center;">
-        <h2 id="passTurnPlayerName" style="color:var(--gold-light);">プレイヤー交代</h2>
-        <p style="margin:12px 0; font-size:13px;">画面を相手に見せないように端末を渡してください。</p>
-        <button id="passTurnReadyBtn" class="btn btn-gold">準備完了（手札を見る）</button>
       </div>
     </div>
 
@@ -578,11 +522,13 @@
 
     let mqttClient = null;
     let roomTopic = "";
-    let isHost = false, isOnline = false, myPlayerId = "p_" + Math.random().toString(36).substr(2, 6);
+    let isHost = false;
+    
+    // このブラウザ端末固有の不変ID
+    const MY_ID = "usr_" + Math.random().toString(36).substr(2, 9);
     let myName = "プレイヤー1";
 
     let gameState = {
-      mode: "local",
       players: [],
       turnIndex: 0,
       deck: [],
@@ -597,26 +543,12 @@
     const gameScreen = document.getElementById("gameScreen");
     const ruleModal = document.getElementById("ruleModal");
     const actionModal = document.getElementById("actionModal");
-    const passTurnModal = document.getElementById("passTurnModal");
-
-    function appendNetLog(msg, type = "normal") {
-      const consoleEl = document.getElementById("connectionConsole");
-      const time = new Date().toTimeString().split(" ")[0];
-      const div = document.createElement("div");
-      if (type === "ok") div.className = "log-ok";
-      if (type === "warn") div.className = "log-warn";
-      if (type === "err") div.className = "log-err";
-      div.innerText = `[${time}] ${msg}`;
-      consoleEl.appendChild(div);
-      consoleEl.scrollTop = consoleEl.scrollHeight;
-    }
 
     window.addEventListener("DOMContentLoaded", () => {
       const urlParams = new URLSearchParams(window.location.search);
       const roomParam = urlParams.get('room');
       if (roomParam) {
         document.getElementById("customRoomIdInput").value = roomParam;
-        appendNetLog(`合言葉「${roomParam}」をURLから設定しました。`, "ok");
       }
 
       document.getElementById("ruleBtn").onclick = () => ruleModal.classList.remove("hidden");
@@ -626,12 +558,6 @@
         const id = document.getElementById("displayRoomId").innerText;
         const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${id}`;
         navigator.clipboard.writeText(inviteUrl).then(() => alert("招待URLをコピーしました！"));
-      };
-
-      document.getElementById("startLocalBtn").onclick = () => {
-        const count = parseInt(document.getElementById("localPlayerCount").value, 10);
-        myName = document.getElementById("playerNameInput").value.trim() || "P1";
-        startLocalGame(count);
       };
 
       document.getElementById("createRoomBtn").onclick = () => {
@@ -652,33 +578,22 @@
         if (gameState.players.length < 2) return;
         initNewDeckAndDeal();
       };
-
-      document.getElementById("passTurnReadyBtn").onclick = () => {
-        passTurnModal.classList.add("hidden");
-        renderGame();
-      };
     });
 
-    /* ================= 超高速MQTT通信 ================= */
+    /* ================= MQTT 通信 ================= */
     function connectMQTT(asHost, roomId) {
-      isOnline = true;
       isHost = asHost;
-      roomTopic = "xeno/v2/room_" + roomId;
+      roomTopic = "xeno/v3/room_" + roomId;
 
-      appendNetLog("高速通信サーバーに接続中...", "warn");
-
-      // EMQX 高速公開WebSocketブローカー (TLS暗号化)
       mqttClient = mqtt.connect("wss://broker.emqx.io:8084/mqtt", {
-        clientId: myPlayerId,
+        clientId: MY_ID,
         clean: true,
         connectTimeout: 5000
       });
 
       mqttClient.on("connect", () => {
-        appendNetLog("サーバー接続成功！", "ok");
         mqttClient.subscribe(roomTopic, (err) => {
           if (!err) {
-            appendNetLog(`部屋「${roomId}」に接続しました。`, "ok");
             document.getElementById("displayRoomId").innerText = roomId;
             lobbyScreen.classList.add("hidden");
             waitingScreen.classList.remove("hidden");
@@ -686,13 +601,12 @@
             if (isHost) {
               document.getElementById("hostActionRow").classList.remove("hidden");
               document.getElementById("guestWaitMsg").classList.add("hidden");
-              gameState.players = [{ id: myPlayerId, name: myName, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false }];
+              gameState.players = [{ id: MY_ID, name: myName, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false }];
               updateMemberList();
             } else {
               document.getElementById("hostActionRow").classList.add("hidden");
               document.getElementById("guestWaitMsg").classList.remove("hidden");
-              // 参加通知を即送信
-              sendMsg({ type: "JOIN", id: myPlayerId, name: myName });
+              sendMsg({ type: "JOIN", id: MY_ID, name: myName });
             }
           }
         });
@@ -705,10 +619,6 @@
         } catch (e) {
           console.error(e);
         }
-      });
-
-      mqttClient.on("error", (err) => {
-        appendNetLog("通信エラー: " + err, "err");
       });
     }
 
@@ -726,7 +636,6 @@
             return;
           }
           gameState.players.push({ id: msg.id, name: msg.name, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false });
-          appendNetLog(`${msg.name} が入室しました！`, "ok");
           updateMemberList();
           sendMsg({ type: "SYNC", state: gameState });
           if (gameState.players.length >= 2) {
@@ -743,7 +652,10 @@
         renderGame();
       } else if (msg.type === "ACTION" && isHost) {
         processCardPlay(msg.playerId, msg.cardRank, msg.targetId, msg.extra);
-      } else if (msg.type === "ERROR" && msg.targetId === myPlayerId) {
+      } else if (msg.type === "PRIVATE_REVEAL" && msg.targetUserId === MY_ID) {
+        // 占師の透視結果（使った本人の端末にだけ表示）
+        alert(`【透視結果】\n${msg.targetName} の手札は【${msg.cards.map(c => `${c}:${CARDS[c].name}`).join(", ")}】です。`);
+      } else if (msg.type === "ERROR" && msg.targetId === MY_ID) {
         alert(msg.text);
       }
     }
@@ -753,29 +665,10 @@
       list.innerHTML = "";
       gameState.players.forEach(p => {
         const li = document.createElement("li");
-        li.innerHTML = `<span>${p.name}</span> <span style="color:var(--gold); font-size:12px;">${p.id === myPlayerId ? "(あなた)" : ""}</span>`;
+        li.innerHTML = `<span>${p.name}</span> <span style="color:var(--gold); font-size:12px;">${p.id === MY_ID ? "(あなた)" : ""}</span>`;
         list.appendChild(li);
       });
       document.getElementById("playerCount").innerText = gameState.players.length;
-    }
-
-    /* ================= ローカル対面 ================= */
-    function startLocalGame(count) {
-      isOnline = false;
-      isHost = true;
-      gameState.mode = "local";
-      gameState.players = [];
-      for (let i = 1; i <= count; i++) {
-        gameState.players.push({
-          id: `local_p${i}`,
-          name: i === 1 ? myName : `プレイヤー${i}`,
-          hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false
-        });
-      }
-      myPlayerId = gameState.players[0].id;
-      lobbyScreen.classList.add("hidden");
-      gameScreen.classList.remove("hidden");
-      initNewDeckAndDeal();
     }
 
     /* ================= ゲームロジック ================= */
@@ -804,11 +697,10 @@
       gameState.turnIndex = 0;
       gameState.phase = "action";
 
-      if (isOnline) {
-        waitingScreen.classList.add("hidden");
-        gameScreen.classList.remove("hidden");
-        sendMsg({ type: "SYNC", state: gameState });
-      }
+      waitingScreen.classList.add("hidden");
+      gameScreen.classList.remove("hidden");
+      sendMsg({ type: "SYNC", state: gameState });
+
       startTurn();
     }
 
@@ -826,18 +718,14 @@
         return;
       }
 
-      if (gameState.mode === "local") {
-        myPlayerId = current.id;
-        document.getElementById("passTurnPlayerName").innerText = `${current.name} の手番です`;
-        passTurnModal.classList.remove("hidden");
-      }
-
       if (current.hasKenja) {
         current.hasKenja = false;
         const count = Math.min(3, gameState.deck.length);
         const drawn = [];
         for (let i = 0; i < count; i++) drawn.push(gameState.deck.pop());
-        if (current.id === myPlayerId) {
+        
+        // 賢者を使った本人の画面でのみ選択モーダル
+        if (current.id === MY_ID) {
           showChoiceModal("【賢者：選択】", "手札に加える1枚を選択してください（残りは山札へ）", drawn, (selected) => {
             current.hand.push(selected);
             drawn.splice(drawn.indexOf(selected), 1);
@@ -848,6 +736,12 @@
             }
             syncAndRender();
           });
+        } else {
+          // ホスト側で相手が選ぶのを待つ、または自動
+          current.hand.push(drawn[0]);
+          drawn.splice(0, 1);
+          gameState.deck.push(...drawn);
+          syncAndRender();
         }
       } else {
         current.hand.push(gameState.deck.pop());
@@ -867,7 +761,8 @@
 
     function requestPlayCard(cardRank) {
       const current = getCurrentPlayer();
-      if (current.id !== myPlayerId) return;
+      // 自分の手番でなければ絶対にカードは出せない
+      if (current.id !== MY_ID) return;
       if (cardRank === 10) return alert("【10: 英雄】は自分から場に出すことはできません。");
 
       const needTarget = [1, 2, 3, 5, 6, 8, 9];
@@ -876,19 +771,19 @@
       if (needTarget.includes(cardRank) && (cardRank !== 1 || isSecondBoy)) {
         const valid = gameState.players.filter(p => p.id !== current.id && !p.isEliminated);
         if (valid.length === 0) {
-          applyCard(current.id, cardRank, null, null);
+          applyCard(MY_ID, cardRank, null, null);
           return;
         }
         showTargetSelectModal(cardRank, valid, (targetId, extra) => {
-          applyCard(current.id, cardRank, targetId, extra);
+          applyCard(MY_ID, cardRank, targetId, extra);
         });
       } else {
-        applyCard(current.id, cardRank, null, null);
+        applyCard(MY_ID, cardRank, null, null);
       }
     }
 
     function applyCard(playerId, cardRank, targetId, extra) {
-      if (isOnline && !isHost) {
+      if (!isHost) {
         sendMsg({ type: "ACTION", playerId, cardRank, targetId, extra });
       } else {
         processCardPlay(playerId, cardRank, targetId, extra);
@@ -937,9 +832,13 @@
           break;
         case 3:
           addLog(`${player.name} は ${target.name} の手札を透視した。`);
-          if (player.id === myPlayerId) {
-            alert(`【透視結果】\n${target.name} の手札: 【${target.hand.map(c => `${c}:${CARDS[c].name}`).join(", ")}】`);
-          }
+          // 透視したプレイヤーの画面にだけ非公開通知
+          sendMsg({
+            type: "PRIVATE_REVEAL",
+            targetUserId: player.id,
+            targetName: target.name,
+            cards: target.hand
+          });
           break;
         case 4:
           player.isProtected = true;
@@ -999,7 +898,7 @@
       target.hand.push(gameState.deck.pop());
       addLog(`${target.name} の手札が開示された: 【${target.hand.map(c => `${c}:${CARDS[c].name}`).join(", ")}】`);
 
-      if (executor.id === myPlayerId) {
+      if (executor.id === MY_ID) {
         showChoiceModal("【公開処刑】捨てさせるカードを選択", `${target.name} の手札から1枚選んでください`, target.hand, (chosen) => {
           applyExecutionChoice(executor, target, chosen, isEmperor);
         });
@@ -1084,51 +983,73 @@
     }
 
     function syncAndRender() {
-      if (isOnline && isHost) sendMsg({ type: "SYNC", state: gameState });
+      if (isHost) sendMsg({ type: "SYNC", state: gameState });
       renderGame();
     }
 
+    /* ================= 描画処理 (完全個別端末レンダリング) ================= */
     function renderGame() {
       document.getElementById("deckCountText").innerText = gameState.deck.length;
       document.getElementById("rebornCard").style.opacity = gameState.rebornCard ? "1" : "0.2";
 
       const logBox = document.getElementById("logBox");
       logBox.innerHTML = "";
-      gameState.logs.slice(-7).reverse().forEach(log => {
+      gameState.logs.slice(-6).reverse().forEach(log => {
         const div = document.createElement("div");
         div.className = "log-entry";
         div.innerText = log;
         logBox.appendChild(div);
       });
 
-      const me = gameState.players.find(p => p.id === myPlayerId) || gameState.players[0];
+      // 自分の端末では【絶対に自分】を特定
+      const me = gameState.players.find(p => p.id === MY_ID) || gameState.players[0];
       const opponents = gameState.players.filter(p => p.id !== me.id);
+      const isMyTurn = (getCurrentPlayer().id === me.id && gameState.phase === "action" && !me.isEliminated);
 
-      document.getElementById("myPlayerName").innerText = me.name;
-      document.getElementById("myStatusBadge").innerText = me.isEliminated ? "脱落" : (getCurrentPlayer().id === me.id ? "あなたの手番" : "相手の手番");
+      // 下部（自分）の表示
+      document.getElementById("myPlayerName").innerText = me.name + " (あなた)";
+      const statusBadge = document.getElementById("myStatusBadge");
+      if (me.isEliminated) {
+        statusBadge.innerText = "脱落";
+        statusBadge.className = "player-badge";
+      } else if (isMyTurn) {
+        statusBadge.innerText = "あなたの番です";
+        statusBadge.className = "player-badge active-turn";
+      } else {
+        statusBadge.innerText = "相手の手番中";
+        statusBadge.className = "player-badge";
+      }
       document.getElementById("myGuardBadge").classList.toggle("hidden", !me.isProtected);
 
+      // 自分の捨て札
       const myDiscard = document.getElementById("myDiscardLine");
       myDiscard.innerHTML = "";
       me.discards.forEach(c => myDiscard.appendChild(createCardElem(c, true)));
 
+      // 自分の手札（自分にしか見えない！）
       const myHand = document.getElementById("myHand");
       myHand.innerHTML = "";
-      const isMyTurn = (getCurrentPlayer().id === me.id && gameState.phase === "action" && !me.isEliminated);
       me.hand.forEach(c => {
         const el = createCardElem(c, false);
-        if (!isMyTurn || c === 10) el.classList.add("disabled");
-        else el.onclick = () => requestPlayCard(c);
+        if (!isMyTurn || c === 10) {
+          el.classList.add("disabled");
+        } else {
+          el.classList.add("my-playable");
+          el.onclick = () => requestPlayCard(c);
+        }
         myHand.appendChild(el);
       });
 
+      // 上部（対戦相手たち：手札は絶対に裏向き card-back）
       const oppArea = document.getElementById("opponentsArea");
       oppArea.innerHTML = "";
       opponents.forEach(opp => {
         const box = document.createElement("div");
-        box.className = `opponent-box ${opp.isEliminated ? "eliminated" : ""} ${getCurrentPlayer().id === opp.id ? "active-turn" : ""}`;
-        box.innerHTML = `<div class="opp-name">${opp.name} ${opp.isProtected ? "🛡️" : ""}</div>`;
+        const isOppTurn = (getCurrentPlayer().id === opp.id);
+        box.className = `opponent-box ${opp.isEliminated ? "eliminated" : ""} ${isOppTurn ? "active-turn" : ""}`;
+        box.innerHTML = `<div class="opp-name">${opp.name} ${opp.isProtected ? "🛡️" : ""} ${isOppTurn ? "★思考中" : ""}</div>`;
 
+        // 相手の手札（中身は絶対に隠し、裏向きカードを枚数分だけ並べる）
         const cardsDiv = document.createElement("div");
         cardsDiv.className = "opp-cards";
         for (let i = 0; i < opp.hand.length; i++) {
@@ -1138,6 +1059,7 @@
         }
         box.appendChild(cardsDiv);
 
+        // 相手の捨て札
         const disDiv = document.createElement("div");
         disDiv.className = "opp-discard";
         opp.discards.forEach(c => disDiv.appendChild(createCardElem(c, true)));
