@@ -41,7 +41,7 @@
     }
 
     .header {
-      height: 44px;
+      height: 42px;
       background: rgba(10, 12, 16, 0.98);
       border-bottom: 1px solid var(--border);
       display: flex;
@@ -85,8 +85,8 @@
     .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
     .screen {
-      height: calc(100vh - 44px);
-      height: calc(100dvh - 44px);
+      height: calc(100vh - 42px);
+      height: calc(100dvh - 42px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -157,8 +157,8 @@
     /* プレイマット盤面 */
     .playmat {
       width: 100vw;
-      height: calc(100vh - 44px);
-      height: calc(100dvh - 44px);
+      height: calc(100vh - 42px);
+      height: calc(100dvh - 42px);
       background-color: #07090c;
       background-size: cover;
       background-position: center;
@@ -272,13 +272,13 @@
     .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .zone-label { font-size: 9px; color: #9ca3af; }
 
-    /* カード本体（白い余白トリミング対応） */
+    /* ★カード本体（coverで縦横比を100%維持！歪みを完全排除） */
     .card {
       width: 78px;
       height: 116px;
       border-radius: 6px;
       position: relative;
-      background-size: 118% 118%;
+      background-size: cover;
       background-position: center center;
       background-repeat: no-repeat;
       box-shadow: 0 4px 12px rgba(0,0,0,0.85);
@@ -295,12 +295,13 @@
     }
     .card.disabled { opacity: 0.4; cursor: not-allowed; }
 
+    /* ★ミニカード（coverで縦横比を完全維持） */
     .card-mini {
       width: 40px;
       height: 58px;
       border-radius: 4px;
       border: 1px solid #5a4b26;
-      background-size: 118% 118%;
+      background-size: cover;
       background-position: center center;
       background-repeat: no-repeat;
       background-color: #111827;
@@ -310,7 +311,7 @@
       overflow: hidden;
     }
     .card-back {
-      background-size: 118% 118%;
+      background-size: cover;
       background-position: center center;
       background-repeat: no-repeat;
     }
@@ -319,7 +320,7 @@
       width: 68px;
       height: 100px;
       border-radius: 5px;
-      background-size: 118% 118%;
+      background-size: cover;
       background-position: center center;
       background-repeat: no-repeat;
       border: 1px solid var(--gold);
@@ -344,7 +345,7 @@
       width: 68px;
       height: 100px;
       border-radius: 5px;
-      background-size: 118% 118%;
+      background-size: cover;
       background-position: center center;
       background-repeat: no-repeat;
       border: 1px dashed var(--gold);
@@ -379,7 +380,7 @@
     }
     .log-entry { margin-bottom: 2px; line-height: 1.35; border-bottom: 1px solid rgba(255,255,255,0.06); }
 
-    /* 自分エリア */
+    /* 最下段：自分エリア */
     .my-area {
       background: rgba(14, 17, 23, 0.96);
       border: 1px solid var(--border);
@@ -629,7 +630,7 @@
           </section>
           <section>
             <h3>■ カード効果（RANK 1 〜 10）</h3>
-            <div class="card-rule-item"><strong>【1】少年 (革命):</strong> 1枚目は効果なし。2枚目で公開処刑発動（英雄は転生可）。</div>
+            <div class="card-rule-item"><strong>【1】少年 (革命):</strong> 1枚目は効果なし。場に2枚目が出た時、相手1人を公開処刑する（英雄は転生可）。</div>
             <div class="card-rule-item"><strong>【2】兵士 (捜査):</strong> 相手1人とカード名を宣言。的中なら脱落（英雄は転生）。</div>
             <div class="card-rule-item"><strong>【3】占師 (透視):</strong> 相手1人の手札を見る。</div>
             <div class="card-rule-item"><strong>【4】乙女 (守護):</strong> 次の自分の手番まで相手のカード効果を受けない。</div>
@@ -735,7 +736,6 @@
     let isHost = false;
     let currentRoomId = "";
     
-    // タブごとに固有の一意ID（重複衝突を完全防止）
     const MY_ID = "usr_" + Date.now().toString(36) + "_" + Math.random().toString(36).substr(2, 6);
     let myName = "プレイヤー1";
 
@@ -768,7 +768,6 @@
     window.addEventListener("DOMContentLoaded", () => {
       document.body.addEventListener("click", () => sounds.init(), { once: true });
 
-      // ★名前の自動復元＆保存機能（localStorage）
       const savedName = localStorage.getItem("xeno_player_name");
       if (savedName) {
         myName = savedName;
@@ -803,19 +802,16 @@
         }
       }
 
-      // ★ロゴクリックでホーム（完全リセットしてロビーに戻る）
       document.getElementById("headerHomeBtn").onclick = () => {
         if (confirm("ロビー画面に戻りますか？（現在の接続は切断されます）")) {
           leaveToHome();
         }
       };
 
-      // 待機画面の「退出」ボタン
       document.getElementById("leaveRoomBtn").onclick = () => {
         leaveToHome();
       };
 
-      // ★「試合終了」ボタン（いつでもゲームを仕切り直せる）
       endGameBtn.onclick = () => {
         if (confirm("現在の試合を中断して待機部屋に戻りますか？")) {
           forceEndMatch();
@@ -853,21 +849,17 @@
       };
     });
 
-    /* ================= ホームへの完全リセット帰還 ================= */
     function leaveToHome() {
       if (autoReturnTimerId) clearInterval(autoReturnTimerId);
       if (heartbeatTimerId) clearInterval(heartbeatTimerId);
 
       if (mqttClient) {
         try {
-          if (isHost) {
-            sendMsg({ type: "FORCE_END" });
-          }
+          if (isHost) sendMsg({ type: "FORCE_END" });
           mqttClient.end(true);
         } catch(e){}
       }
 
-      // 試合状態を真っ新にリセット
       isHost = false;
       currentRoomId = "";
       gameState = {
@@ -890,7 +882,6 @@
       lobbyScreen.classList.remove("hidden");
     }
 
-    // 試合強制終了
     function forceEndMatch() {
       if (isHost) {
         addLog("ホストによって試合が終了されました。待機部屋に戻ります。");
@@ -900,7 +891,6 @@
       }
     }
 
-    /* ================= 堅牢な通信基盤 ================= */
     function enterRoom(preferredHost) {
       const customId = document.getElementById("customRoomIdInput").value.trim();
       if (!customId) return alert("合言葉を入力してください");
@@ -911,7 +901,7 @@
     }
 
     function connectMQTT(preferredHost, roomId) {
-      roomTopic = "xeno/v14/room_" + roomId;
+      roomTopic = "xeno/v15/room_" + roomId;
 
       if (mqttClient) {
         try { mqttClient.end(true); } catch(e){}
@@ -1033,7 +1023,7 @@
           if (heartbeatTimerId) clearInterval(heartbeatTimerId);
           waitingScreen.classList.add("hidden");
           gameScreen.classList.remove("hidden");
-          endGameBtn.classList.remove("hidden"); // ゲーム中は試合終了ボタンを表示
+          endGameBtn.classList.remove("hidden");
         }
         renderGame();
 
@@ -1091,7 +1081,7 @@
         showDuelModal(msg);
       }
       else if (msg.type === "PRIVATE_REVEAL" && msg.targetUserId === MY_ID) {
-        alert(`【透視結果】\n${msg.targetName} の手札は【${msg.cards.map(c => `${c}:${CARDS[c].name}`).join(", ")}】です。`);
+        alert(`【透視結果】\n${msg.targetName} の手札は【${msg.cards.map(c => `${c}:${CARDS[c]?.name || ""}`).join(", ")}】です。`);
       }
     }
 
@@ -1246,6 +1236,17 @@
       startTurn();
     }
 
+    // ★全プレイヤーの捨て札から指定ランクのカードが出ている総枚数を直接カウント（絶対確実判定）
+    function countDiscards(rank) {
+      let count = 0;
+      (gameState.players || []).forEach(p => {
+        (p.discards || []).forEach(c => {
+          if (c === rank) count++;
+        });
+      });
+      return count;
+    }
+
     function requestPlayCard(cardRank) {
       const current = getCurrentPlayer();
       if (current.id !== MY_ID) return;
@@ -1254,7 +1255,9 @@
       sounds.playPlayCard();
 
       const needTarget = [1, 2, 3, 5, 6, 8, 9];
-      const isSecondBoy = (cardRank === 1 && gameState.discardsAll.includes(1));
+      // ★捨て札に既に1番があるかを直接確実にチェック！
+      const alreadyBoyInField = (countDiscards(1) >= 1);
+      const isSecondBoy = (cardRank === 1 && alreadyBoyInField);
 
       if (needTarget.includes(cardRank) && (cardRank !== 1 || isSecondBoy)) {
         const valid = gameState.players.filter(p => p.id !== current.id && !p.isEliminated);
@@ -1282,17 +1285,20 @@
       const player = gameState.players.find(p => p.id === playerId);
       const target = gameState.players.find(p => p.id === targetId);
 
+      // 出す前の時点で既に1番が捨て札にあったかどうかを判定
+      const alreadyBoyCount = countDiscards(1);
+      const isSecondBoy = (cardRank === 1 && alreadyBoyCount >= 1);
+
       const idx = player.hand.indexOf(cardRank);
       if (idx !== -1) player.hand.splice(idx, 1);
       player.discards.push(cardRank);
       gameState.discardsAll.push(cardRank);
 
-      addLog(`${player.name} は【${cardRank}: ${CARDS[cardRank].name}】を使用した。`);
+      addLog(`${player.name} は【${cardRank}: ${CARDS[cardRank]?.name}】を使用した。`);
 
-      const isSecondBoy = (cardRank === 1 && gameState.discardsAll.filter(c => c === 1).length >= 2);
       if ([5, 9].includes(cardRank) || isSecondBoy) {
         if (gameState.deck.length === 0) {
-          addLog(`山札が0枚のため【${CARDS[cardRank].name}】の効果は不発。即ゲーム終了判定となります。`);
+          addLog(`山札が0枚のため【${CARDS[cardRank]?.name}】の効果は不発。即ゲーム終了判定となります。`);
           broadcastState();
           setTimeout(endGameByDeckEmpty, 1000);
           return;
@@ -1308,14 +1314,16 @@
       switch (cardRank) {
         case 1:
           if (isSecondBoy) {
-            addLog(`革命発動！${target.name} を公開処刑する。`);
+            addLog(`⚡ 革命発動！${target.name} を公開処刑する。`);
             executePublicExecution(player, target, false);
             return;
+          } else {
+            addLog(`少年の1枚目。何も起きない。`);
           }
           break;
         case 2:
           const guess = extra.guessRank;
-          addLog(`${player.name} は ${target.name} に【${guess}: ${CARDS[guess].name}】の捜査を宣言！`);
+          addLog(`${player.name} は ${target.name} に【${guess}: ${CARDS[guess]?.name}】の捜査を宣言！`);
           if (target.hand.includes(guess)) {
             if (guess === 10) {
               addLog(`捜査的中！しかし英雄は転生する！`);
@@ -1410,7 +1418,7 @@
       const discarded = target.hand.splice(chosenIndex, 1)[0];
       target.discards.push(discarded);
       gameState.discardsAll.push(discarded);
-      addLog(`${executor.name} は ${target.name} のカードを捨てさせた！【捨て札: ${discarded}: ${CARDS[discarded].name}】`);
+      addLog(`${executor.name} は ${target.name} のカードを捨てさせた！【捨て札: ${discarded}: ${CARDS[discarded]?.name}】`);
 
       if (discarded === 10) {
         addLog(`捨てられたのは英雄！英雄は転生する！`);
@@ -1420,8 +1428,12 @@
     }
 
     function executePublicExecution(executor, target, isEmperor) {
-      target.hand.push(gameState.deck.pop());
-      addLog(`${target.name} の手札が開示された: 【${target.hand.map(c => `${c}:${CARDS[c].name}`).join(", ")}】`);
+      const drawnCard = gameState.deck.pop();
+      if (drawnCard !== undefined) {
+        target.hand.push(drawnCard);
+      }
+      addLog(`${target.name} の手札が開示された: 【${target.hand.map(c => `${c}:${CARDS[c]?.name || ""}`).join(", ")}】`);
+      broadcastState();
 
       if (executor.id === MY_ID) {
         showChoiceModal("【公開処刑】捨てさせるカードを選択", `${target.name} の手札から1枚選んでください`, target.hand, (chosen) => {
@@ -1444,7 +1456,7 @@
       target.hand.splice(idx, 1);
       target.discards.push(chosenCard);
       gameState.discardsAll.push(chosenCard);
-      addLog(`${executor.name} は ${target.name} の【${chosenCard}: ${CARDS[chosenCard].name}】を処刑した！`);
+      addLog(`${executor.name} は ${target.name} の【${chosenCard}: ${CARDS[chosenCard]?.name}】を処刑した！`);
 
       if (chosenCard === 10) {
         if (isEmperor) {
@@ -1452,7 +1464,7 @@
           addLog(`皇帝により英雄は完全に処刑された！${target.name} は脱落！`);
           eliminatePlayer(target);
         } else {
-          addLog(`英雄は転生する！`);
+          addLog(`少年による処刑のため、英雄は転生する！`);
           executeReborn(target);
         }
       }
@@ -1516,7 +1528,7 @@
         document.getElementById("gameOverDesc").innerText = `最高数字（${alive[0].hand[0]}）が同点でした！`;
       } else if (alive.length > 0) {
         document.getElementById("gameOverTitle").innerText = `🏆 勝者：${alive[0].name}`;
-        document.getElementById("gameOverDesc").innerText = `手札【${alive[0].hand[0]}: ${CARDS[alive[0].hand[0]].name}】により勝利！`;
+        document.getElementById("gameOverDesc").innerText = `手札【${alive[0].hand[0]}: ${CARDS[alive[0].hand[0]]?.name}】により勝利！`;
       }
       showGameOverAndStartTimer();
       broadcastState();
@@ -1525,7 +1537,7 @@
     function revealRebornAtEnd() {
       if (gameState.rebornCard) {
         const r = gameState.rebornCard;
-        document.getElementById("rebornRevealBox").innerHTML = `除外されていた転生札：<strong>【${r}: ${CARDS[r].name}】</strong>`;
+        document.getElementById("rebornRevealBox").innerHTML = `除外されていた転生札：<strong>【${r}: ${CARDS[r]?.name}】</strong>`;
       } else {
         document.getElementById("rebornRevealBox").innerText = "転生札は英雄の復活に使用されました。";
       }
@@ -1572,7 +1584,7 @@
       startHeartbeat();
     }
 
-    /* ================= UI描画（安全ガード強化） ================= */
+    /* ================= UI描画 ================= */
     function setCardImage(el, filename) {
       if (!el) return;
       el.style.backgroundImage = `url('${getAssetUrl(filename)}')`;
@@ -1611,13 +1623,11 @@
         logBox.appendChild(div);
       });
 
-      // 自分の特定
       const me = gameState.players.find(p => p.id === MY_ID) || gameState.players[0] || { id: MY_ID, name: myName, hand: [], discards: [] };
       const opponents = gameState.players.filter(p => p.id !== me.id);
       const currentP = getCurrentPlayer();
       const isMyTurn = (currentP.id === me.id && gameState.phase === "action" && !me.isEliminated);
 
-      // 自分のステータス
       document.getElementById("myPlayerName").innerText = (me.name || "自分") + " (あなた)";
       const statusBadge = document.getElementById("myStatusBadge");
       if (me.isEliminated) {
@@ -1669,7 +1679,7 @@
         myHand.appendChild(el);
       });
 
-      // ★対戦相手情報バー（カード消失バグ防御ガード）
+      // 相手情報バー
       const oppBar = document.getElementById("opponentsBar");
       oppBar.innerHTML = "";
       opponents.forEach(opp => {
@@ -1687,7 +1697,7 @@
         oppBar.appendChild(box);
       });
 
-      // ★対戦相手の捨て札フィールド
+      // 相手の捨て札
       const oppFieldContainer = document.getElementById("oppFieldContainer");
       oppFieldContainer.innerHTML = "";
       opponents.forEach(opp => {
