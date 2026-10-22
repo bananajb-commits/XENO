@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <base href="./">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>XENO - 完全公式ルール準拠版</title>
+  <title>XENO - 完全公式ルール準拠・決定版</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -257,7 +257,7 @@
     .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .zone-label { font-size: 9px; color: #9ca3af; }
 
-    /* カード本体（フォールバック付き美麗デザイン） */
+    /* カード本体 */
     .card {
       width: 78px;
       height: 116px;
@@ -304,7 +304,6 @@
       overflow: hidden;
     }
 
-    /* カード背面のフォールバック */
     .card-back {
       background: linear-gradient(135deg, #1e2530 0%, #0d1117 100%);
       border: 1px solid var(--gold);
@@ -435,7 +434,6 @@
     }
     .card-mini .card-badge { font-size: 8px; padding: 0 2px; }
 
-    /* カード内フォールバック表示用 */
     .card-center-label {
       margin: auto;
       text-align: center;
@@ -478,12 +476,32 @@
     .rule-scroll section { margin-bottom: 14px; }
     .rule-scroll h3 { color: var(--gold-light); margin-bottom: 4px; }
     .card-rule-item { background: rgba(255,255,255,0.04); padding: 5px 8px; margin-bottom: 4px; border-left: 2px solid var(--gold); }
+
+    /* リザルト最終手札公開リスト */
+    .result-hand-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 14px 0;
+      max-height: 180px;
+      overflow-y: auto;
+      text-align: left;
+    }
+    .result-hand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.05);
+      padding: 6px 12px;
+      border-radius: 4px;
+      border-left: 3px solid var(--gold);
+    }
   </style>
 </head>
 <body>
   <div id="app">
     <header class="header">
-      <div class="logo" id="headerHomeBtn" title="ホーム（ロビー）に戻る">XENO</div>
+      <div class="logo" id="headerHomeBtn" title="ホームに戻る">XENO</div>
       <div class="header-actions">
         <button id="endGameBtn" class="btn btn-danger hidden" title="試合を強制終了して待機部屋に戻る">🏳️ 中断</button>
         <button id="soundToggleBtn" class="btn btn-secondary">🔊</button>
@@ -588,7 +606,7 @@
       </div>
     </div>
 
-    <!-- 汎用アクション・選択モーダル -->
+    <!-- 汎用アクションモーダル -->
     <div id="actionModal" class="modal-overlay hidden">
       <div class="modal-content">
         <h3 id="modalTitle" style="color:var(--gold-light);">アクション</h3>
@@ -609,7 +627,7 @@
       </div>
     </div>
 
-    <!-- 占師：透視モーダル（自分だけが見る秘密の画面） -->
+    <!-- 占師：透視モーダル -->
     <div id="clairvoyanceModal" class="modal-overlay hidden">
       <div class="modal-content" style="text-align:center;">
         <h2 style="color:var(--gold-light); margin-bottom:8px;">🔮 占師：透視結果 🔮</h2>
@@ -620,11 +638,26 @@
       </div>
     </div>
 
+    <!-- 精霊：交換通知モーダル -->
+    <div id="swapNoticeModal" class="modal-overlay hidden">
+      <div class="modal-content" style="text-align:center;">
+        <h2 style="color:var(--gold-light); margin-bottom:8px;">🕊️ 精霊：手札交換 🕊️</h2>
+        <p id="swapNoticeDesc" style="font-size:13px; color:#cbd5e0; margin-bottom:15px;"></p>
+        <div id="swapReceivedCardBox" style="display:flex; justify-content:center; margin:15px 0;"></div>
+        <button id="closeSwapBtn" class="btn btn-gold">受け取る</button>
+      </div>
+    </div>
+
     <!-- ゲーム終了モーダル -->
     <div id="gameOverModal" class="modal-overlay hidden">
       <div class="modal-content" style="text-align:center;">
         <h2 id="gameOverTitle" style="color:var(--gold-light); font-size:22px; margin-bottom:10px;">勝負あり！</h2>
         <p id="gameOverDesc" style="font-size:14px; color:#cbd5e0; margin:10px 0;"></p>
+        
+        <!-- 全員の最終手札公開ボックス -->
+        <div style="font-size:12px; color:var(--gold-light); font-weight:bold; margin-top:10px;">【全プレイヤーの最終手札公開】</div>
+        <div class="result-hand-list" id="finalHandsList"></div>
+
         <div id="rebornRevealBox" style="margin:12px 0; font-size:13px; color:#9ca3af;"></div>
         
         <div id="autoReturnTimer" style="font-size:12px; color:var(--gold-light); margin:12px 0;">
@@ -645,7 +678,7 @@
           <section>
             <h3>■ 概要と勝利条件</h3>
             <p>全18枚。各プレイヤーに1枚配り、1枚を裏向きで「転生札」として除外してスタート。山札から1枚引いて手札2枚から1枚を出して効果を発動します。</p>
-            <p><strong>勝利条件：</strong> 他プレイヤー全員を脱落させるか、山札が尽きた時点で最も数字が大きいカードを持っていた人の勝利。</p>
+            <p><strong>勝利条件：</strong> 他プレイヤー全員を脱落させるか、手番終了時に山札が尽きた時点で最も数字が大きいカードを持っていた人の勝利。</p>
           </section>
           <section>
             <h3>■ カード効果（RANK 1 〜 10）</h3>
@@ -655,7 +688,7 @@
             <div class="card-rule-item"><strong>【4】乙女 (守護):</strong> 次の自分の手番まで相手のカード効果を受けない。</div>
             <div class="card-rule-item"><strong>【5】死神 (疫病):</strong> 相手に1枚引かせシャッフル。使用者が裏向きの2枚から1枚選んで捨てさせる（英雄は転生）。</div>
             <div class="card-rule-item"><strong>【6】貴族 (対決):</strong> 相手1人と手札を見せ合い、数字の小さい方が脱落（同数は両者脱落）。</div>
-            <div class="card-rule-item"><strong>【7】賢者 (選択):</strong> 次の自分の手番で山札から3枚引いて好きな1枚を選び、残りを山札へ戻す。</div>
+            <div class="card-rule-item"><strong>【7】賢者 (選択):</strong> 次の自分の手番で山札から3枚引いて好きな1枚を選び、残りを山札へ戻す。※効果発動後に転生しても次回発動可能！</div>
             <div class="card-rule-item"><strong>【8】精霊 (交換):</strong> 相手1人と手札を交換する。</div>
             <div class="card-rule-item"><strong>【9】皇帝 (公開処刑):</strong> 相手に1枚引かせ2枚とも公開。1枚処刑。※英雄は転生できず即脱落！</div>
             <div class="card-rule-item"><strong>【10】英雄 (潜伏・転生):</strong> 出せない。皇帝以外で捨てられたら転生札で復活。</div>
@@ -780,6 +813,7 @@
     const actionModal = document.getElementById("actionModal");
     const duelModal = document.getElementById("duelModal");
     const clairvoyanceModal = document.getElementById("clairvoyanceModal");
+    const swapNoticeModal = document.getElementById("swapNoticeModal");
     const gameOverModal = document.getElementById("gameOverModal");
     const endGameBtn = document.getElementById("endGameBtn");
     const playerNameInput = document.getElementById("playerNameInput");
@@ -807,7 +841,6 @@
         document.getElementById("soundToggleBtn").innerText = sounds.enabled ? "🔊" : "🔇";
       };
 
-      // 画像があれば背景画像セット
       testAndSetImage(document.getElementById("playmat"), "mat.jpg");
       testAndSetImage(document.getElementById("deckVisual"), "card_back.jpg");
       testAndSetImage(document.getElementById("rebornCard"), "card_back.jpg");
@@ -835,6 +868,7 @@
       document.getElementById("closeRuleBtn").onclick = () => ruleModal.classList.add("hidden");
       document.getElementById("closeDuelBtn").onclick = () => duelModal.classList.add("hidden");
       document.getElementById("closeClairvoyanceBtn").onclick = () => clairvoyanceModal.classList.add("hidden");
+      document.getElementById("closeSwapBtn").onclick = () => swapNoticeModal.classList.add("hidden");
 
       document.getElementById("copyInviteUrlBtn").onclick = () => {
         const id = document.getElementById("displayRoomId").innerText;
@@ -894,6 +928,7 @@
       actionModal.classList.add("hidden");
       duelModal.classList.add("hidden");
       clairvoyanceModal.classList.add("hidden");
+      swapNoticeModal.classList.add("hidden");
       lobbyScreen.classList.remove("hidden");
     }
 
@@ -906,7 +941,7 @@
       }
     }
 
-    /* ================= 高速通信（HiveMQ） ================= */
+    /* ================= 通信（HiveMQ） ================= */
     function enterRoom() {
       const customId = document.getElementById("customRoomIdInput").value.trim();
       if (!customId) return alert("合言葉を入力してください");
@@ -1021,6 +1056,7 @@
           actionModal.classList.add("hidden");
           duelModal.classList.add("hidden");
           clairvoyanceModal.classList.add("hidden");
+          swapNoticeModal.classList.add("hidden");
           waitingScreen.classList.remove("hidden");
           
           if (isHost) {
@@ -1042,7 +1078,6 @@
         }
         renderGame();
 
-        // 賢者・死神・公開処刑の待機UI制御
         handlePhaseModals();
 
         if (getCurrentPlayer().id === MY_ID && prevTurn !== gameState.turnIndex && gameState.phase === "action") {
@@ -1062,9 +1097,19 @@
         returnToWaitingRoom();
       }
 
+      // ★ホスト自動移譲セーフティ
       else if (msg.type === "HOST_LEFT") {
-        alert("ホストが部屋を退出しました。ロビーに戻ります。");
-        leaveToHome();
+        if (gameState.phase === "init") {
+          gameState.players = gameState.players.filter(p => p.id !== msg.hostId);
+          if (gameState.players.length > 0 && gameState.players[0].id === MY_ID) {
+            gameState.hostId = MY_ID;
+            isHost = true;
+            broadcastState();
+          }
+        } else {
+          alert("ホストが部屋を退出しました。ロビーに戻ります。");
+          leaveToHome();
+        }
       }
 
       else if (msg.type === "PLAYER_LEFT") {
@@ -1091,6 +1136,9 @@
       }
       else if (msg.type === "PRIVATE_REVEAL" && msg.targetUserId === MY_ID) {
         showClairvoyanceModal(msg.targetName, msg.cards);
+      }
+      else if (msg.type === "SWAP_NOTIFY" && msg.targetUserId === MY_ID) {
+        showSwapReceivedModal(msg.senderName, msg.card);
       }
     }
 
@@ -1160,9 +1208,7 @@
         [deck[i], deck[j]] = [deck[j], deck[i]];
       }
 
-      // 1枚を転生札として除外
       gameState.rebornCard = deck.pop();
-      // 各プレイヤーに1枚配る
       gameState.players.forEach(p => {
         p.hand = [deck.pop()];
         p.discards = [];
@@ -1205,11 +1251,10 @@
       const current = getCurrentPlayer();
       if (current.isEliminated) { nextTurn(); return; }
 
-      // ★手番開始時に自分の守護を解除（相手の守護は解除されない！）
+      // ★手番開始時に自分の守護を解除
       current.isProtected = false;
       addLog(`--- 【${current.name}】の手番 ---`);
 
-      // すでに手札が2枚あれば引かない
       if (current.hand.length >= 2) {
         gameState.phase = "action";
         broadcastState();
@@ -1221,7 +1266,6 @@
         current.hasKenja = false;
         const count = Math.min(3, gameState.deck.length);
         if (count === 0) {
-          // 山札がなければ引けずにアクションへ
           gameState.phase = "action";
           broadcastState();
           return;
@@ -1239,7 +1283,6 @@
         };
         broadcastState();
       } else {
-        // 通常ドロー
         if (gameState.deck.length > 0) {
           const drawnCard = gameState.deck.pop();
           current.hand.push(drawnCard);
@@ -1262,7 +1305,6 @@
       const chosenIdx = drawn.indexOf(chosenCard);
       if (chosenIdx !== -1) drawn.splice(chosenIdx, 1);
       
-      // 残りを山札に戻してシャッフル
       gameState.deck.push(...drawn);
       for (let i = gameState.deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1295,7 +1337,6 @@
       return count;
     }
 
-    /* ★カードをタップしてプレイ */
     function requestPlayCard(cardRank) {
       const current = getCurrentPlayer();
       if (current.id !== MY_ID) return;
@@ -1314,7 +1355,6 @@
           return;
         }
 
-        // 1対1なら対象選択を自動スキップ
         if (valid.length === 1) {
           const autoTarget = valid[0];
           if (cardRank === 2) {
@@ -1328,7 +1368,6 @@
           return;
         }
 
-        // 3人以上は相手選択画面を出す
         showTargetSelectModal(cardRank, valid, (targetId, extra) => {
           applyCard(MY_ID, cardRank, targetId, extra);
         });
@@ -1359,14 +1398,14 @@
 
       addLog(`${player.name} は【${cardRank}: ${CARDS[cardRank]?.name}】を使用した。`);
 
-      // ★乙女の絶対守護ガード（対象が守護中なら効果は不発）
+      // ★守護チェック
       if (target && target.isProtected) {
         addLog(`🛡️【乙女の守護】${target.name} は聖なる結界により効果を完全に防いだ！`);
         finishAction();
         return;
       }
 
-      // ★山札0枚チェック（皇帝・死神・少年2枚目は山札0なら効果不発でゲーム終了）
+      // ★山札0枚チェック
       if ([5, 9].includes(cardRank) || isSecondBoy) {
         if (gameState.deck.length === 0) {
           addLog(`山札が0枚のため【${CARDS[cardRank]?.name}】の効果は不発。ゲーム終了となります。`);
@@ -1396,7 +1435,7 @@
               executeReborn(target);
             } else {
               sounds.playExecute();
-              addLog(`捜査的中！${target.name} は脱落した！`);
+              addLog(`🎯 捜査的中！${target.name} は手札【${guess}: ${CARDS[guess]?.name}】を公開して脱落した！`);
               eliminatePlayer(target);
               if (checkWinnerAfterElimination()) return;
             }
@@ -1446,8 +1485,11 @@
           addLog(`${player.name} と ${target.name} の決闘！`);
           const pVal = player.hand[0], tVal = target.hand[0];
           
-          // 決闘演出フェーズへ
           gameState.phase = "duel_show";
+          gameState.pendingAction = {
+            p1Name: player.name,
+            p2Name: target.name
+          };
           broadcastState();
 
           sendMsg({
@@ -1466,24 +1508,25 @@
           setTimeout(() => {
             if (pVal < tVal) {
               sounds.playExecute();
-              addLog(`決闘の敗北：${player.name} は脱落！`);
+              addLog(`決闘の敗北：${player.name} は手札【${pVal}: ${CARDS[pVal]?.name}】を公開して脱落！`);
               eliminatePlayer(player);
               if (checkWinnerAfterElimination()) return;
             } else if (pVal > tVal) {
               sounds.playExecute();
-              addLog(`決闘の勝利：${target.name} は脱落！`);
+              addLog(`決闘の勝利：${target.name} は手札【${tVal}: ${CARDS[tVal]?.name}】を公開して脱落！`);
               eliminatePlayer(target);
               if (checkWinnerAfterElimination()) return;
             } else {
               sounds.playExecute();
-              addLog(`相打ち！両者脱落！`);
+              addLog(`相打ち！手札【${pVal}】で両者脱落！`);
               eliminatePlayer(player);
               eliminatePlayer(target);
               if (checkWinnerAfterElimination()) return;
             }
+            gameState.pendingAction = null;
             gameState.phase = "action";
             finishAction();
-          }, 3500);
+          }, 3600);
           return;
 
         case 7:
@@ -1493,9 +1536,22 @@
 
         case 8:
           addLog(`${player.name} と ${target.name} は手札を交換した。`);
-          const temp = [...player.hand];
-          player.hand = [...target.hand];
-          target.hand = temp;
+          const tempP = [...player.hand];
+          const tempT = [...target.hand];
+          player.hand = tempT;
+          target.hand = tempP;
+
+          // 交換通知
+          if (target.id === MY_ID) {
+            showSwapReceivedModal(player.name, tempP[0]);
+          } else {
+            sendMsg({
+              type: "SWAP_NOTIFY",
+              targetUserId: target.id,
+              senderName: player.name,
+              card: tempP[0]
+            });
+          }
           break;
 
         case 9:
@@ -1582,8 +1638,8 @@
       return false;
     }
 
+    // ★公式ルール修正：転生しても賢者効果（hasKenja）は消滅しない！
     function executeReborn(player) {
-      player.hasKenja = false;
       while (player.hand.length > 0) {
         const c = player.hand.pop();
         player.discards.push(c);
@@ -1610,7 +1666,7 @@
       }
     }
 
-    // ★手番終了時：公式ルールに基づき、手番終了時点で山札が0なら即座にゲーム終了！
+    // ★手番終了時：公式ルール準拠（山札0なら即終了）
     function finishAction() {
       broadcastState();
       
@@ -1623,13 +1679,14 @@
       setTimeout(nextTurn, 900);
     }
 
-    /* ================= 決着＆終了判定 ================= */
+    /* ================= 決着＆全プレイヤー手札公開 ================= */
     function endGameByLastAlive(winner) {
       gameState.phase = "ended";
       revealRebornAtEnd();
       sounds.playWin();
       document.getElementById("gameOverTitle").innerText = winner ? `🏆 勝者：${winner.name}` : "引き分け（相打ち）";
       document.getElementById("gameOverDesc").innerText = winner ? `他のプレイヤーが全員脱落しました！完全勝利！` : "全員が相打ち脱落しました。";
+      renderFinalHandsList();
       showGameOverAndStartTimer();
       broadcastState();
     }
@@ -1653,8 +1710,26 @@
         document.getElementById("gameOverTitle").innerText = `🏆 勝者：${alive[0].name}`;
         document.getElementById("gameOverDesc").innerText = `手札【${alive[0].hand[0]}: ${CARDS[alive[0].hand[0]]?.name}】により勝利！`;
       }
+      renderFinalHandsList();
       showGameOverAndStartTimer();
       broadcastState();
+    }
+
+    // ★全員の手札開示レンダラー
+    function renderFinalHandsList() {
+      const container = document.getElementById("finalHandsList");
+      container.innerHTML = "";
+      gameState.players.forEach(p => {
+        const row = document.createElement("div");
+        row.className = "result-hand-row";
+        const cardRank = p.hand[0];
+        const cardInfo = cardRank ? `【${cardRank}: ${CARDS[cardRank]?.name}】` : "（手札なし/脱落）";
+        row.innerHTML = `
+          <span><strong>${p.name}</strong> ${p.isEliminated ? "<small style='color:#ef4444;'>(脱落)</small>" : ""}</span>
+          <span style="color:var(--gold-light); font-weight:bold;">${cardInfo}</span>
+        `;
+        container.appendChild(row);
+      });
     }
 
     function revealRebornAtEnd() {
@@ -1670,6 +1745,8 @@
       gameOverModal.classList.remove("hidden");
       actionModal.classList.add("hidden");
       duelModal.classList.add("hidden");
+      clairvoyanceModal.classList.add("hidden");
+      swapNoticeModal.classList.add("hidden");
       let count = 7;
       document.getElementById("countdownSec").innerText = count;
 
@@ -1708,12 +1785,13 @@
         actionModal.classList.add("hidden");
         duelModal.classList.add("hidden");
         clairvoyanceModal.classList.add("hidden");
+        swapNoticeModal.classList.add("hidden");
         waitingScreen.classList.remove("hidden");
       }
       startHeartbeat();
     }
 
-    /* ================= 待機モーダル・同期ハンドラ ================= */
+    /* ================= 待機モーダルハンドラ ================= */
     function handlePhaseModals() {
       if (gameState.phase === "kenja_select") {
         const p = gameState.pendingAction;
@@ -1735,6 +1813,9 @@
             if (isHost) applyReaperChoice(p.executorId, p.targetId, chosenIndex);
             else sendMsg({ type: "REAPER_CHOSEN", executorId: MY_ID, targetId: p.targetId, chosenIndex });
           });
+        } else if (p.targetId === MY_ID) {
+          // 死神を受けた側は、手札が見える状態で通知表示
+          showWaitingNoticeModal("死神：疫病", `${p.executorName} があなたの2枚の手札から捨てるカードを選んでいます...`);
         } else {
           showWaitingNoticeModal("死神：疫病", `${p.executorName} が ${p.targetName} の捨てるカードを選んでいます...`);
         }
@@ -1749,6 +1830,15 @@
           });
         } else {
           showPublicExecutionWatchModal(p.targetName, p.targetHand, p.executorName);
+        }
+      }
+      // 貴族の第3者待機表示
+      else if (gameState.phase === "duel_show") {
+        const p = gameState.pendingAction;
+        if (p && !duelModal.classList.contains("hidden")) {
+          // 当事者はduelModal表示中
+        } else if (p) {
+          showWaitingNoticeModal("貴族の決闘", `${p.p1Name} と ${p.p2Name} が密かに対決を行っています...`);
         }
       }
       else if (gameState.phase === "action" || gameState.phase === "ended") {
@@ -1962,6 +2052,14 @@
       cards.forEach(c => {
         box.appendChild(createCardElem(c, false));
       });
+    }
+
+    function showSwapReceivedModal(senderName, card) {
+      swapNoticeModal.classList.remove("hidden");
+      document.getElementById("swapNoticeDesc").innerText = `${senderName} と精霊で手札を交換しました！受け取ったカード：`;
+      const box = document.getElementById("swapReceivedCardBox");
+      box.innerHTML = "";
+      box.appendChild(createCardElem(card, false));
     }
 
     function showPublicExecutionWatchModal(targetName, cards, executorName) {
