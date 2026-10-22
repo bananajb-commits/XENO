@@ -151,7 +151,7 @@
       font-size: 13px;
     }
 
-    /* ================= プレイマット盤面 ================= */
+    /* プレイマット */
     .playmat {
       width: 100vw;
       height: calc(100vh - 42px);
@@ -166,7 +166,7 @@
       gap: 4px;
     }
 
-    /* 1. 最上段：相手情報バー */
+    /* 最上段：相手情報バー */
     .opponents-bar {
       display: flex;
       justify-content: center;
@@ -193,7 +193,7 @@
     .opp-name { font-size: 12px; font-weight: 700; color: #cbd5e0; }
     .opp-cards { display: flex; gap: 3px; }
 
-    /* ================= 捨て札ゾーン（中央を基準に均等展開） ================= */
+    /* 捨て札ゾーン（中央展開） */
     .field-zone {
       display: flex;
       flex-direction: column;
@@ -222,8 +222,6 @@
       letter-spacing: 1px;
       margin-bottom: 2px;
     }
-
-    /* ★真ん中を基準に左右対称に重なり展開するレーン */
     .lane-cards {
       display: flex;
       justify-content: center;
@@ -232,11 +230,11 @@
       position: relative;
     }
     .lane-cards .card-mini {
-      margin: 0 -7px; /* 左右均等のマイナスマージンで中心を崩さず展開 */
+      margin: 0 -7px;
       transition: transform 0.2s, z-index 0.2s;
     }
 
-    /* ★相手の捨て札：真ん中（テーブル中央＝画面下方向）を向くように180度回転！ */
+    /* 相手の捨て札：真ん中（下方向）を向く */
     .opp-discard-card {
       transform: rotate(180deg);
     }
@@ -244,7 +242,6 @@
       transform: rotate(180deg) translateY(-8px) scale(1.15) !important;
       z-index: 50 !important;
     }
-    /* 相手のカードの数字バッジは自分から読めるよう正位置に補正 */
     .opp-discard-card .card-badge {
       transform: rotate(180deg);
       bottom: 2px;
@@ -253,7 +250,7 @@
       left: auto;
     }
 
-    /* ★自分の捨て札：真ん中（テーブル中央＝画面上方向）を向く正位置 */
+    /* 自分の捨て札：真ん中（上方向）を向く */
     .my-discard-card {
       transform: rotate(0deg);
     }
@@ -262,7 +259,7 @@
       z-index: 50 !important;
     }
 
-    /* 3. 中央テーブル */
+    /* 中央テーブル */
     .center-table {
       display: flex;
       justify-content: center;
@@ -367,7 +364,7 @@
     }
     .log-entry { margin-bottom: 2px; line-height: 1.35; border-bottom: 1px solid rgba(255,255,255,0.06); }
 
-    /* 5. 最下段：自分エリア */
+    /* 最下段：自分エリア */
     .my-area {
       background: rgba(14, 17, 23, 0.96);
       border: 1px solid var(--border);
@@ -517,16 +514,12 @@
     <!-- メインゲーム画面 -->
     <div id="gameScreen" class="screen hidden">
       <div class="playmat" id="playmat">
-        
-        <!-- 1. 最上段：相手の情報バー -->
         <div class="opponents-bar" id="opponentsBar"></div>
 
-        <!-- 2. 相手の場（真ん中を向き、中央基準で展開） -->
         <div class="field-zone">
           <div class="field-players-container" id="oppFieldContainer"></div>
         </div>
 
-        <!-- 3. 中央テーブル -->
         <div class="center-table">
           <div class="deck-zone">
             <div class="deck-wrapper">
@@ -545,7 +538,6 @@
           <div class="game-log-box" id="logBox"></div>
         </div>
 
-        <!-- 4. 自分の場（真ん中を向き、中央基準で展開） -->
         <div class="field-zone">
           <div class="player-discard-lane">
             <div class="lane-label">あなたの捨て札</div>
@@ -553,7 +545,6 @@
           </div>
         </div>
 
-        <!-- 5. 最下段：自分の手札エリア -->
         <div class="my-area">
           <div id="playConfirmBar" class="play-confirm-bar hidden">
             <span id="selectedCardDesc" style="font-size:11px; color:#cbd5e0;"></span>
@@ -627,7 +618,7 @@
             <div class="card-rule-item"><strong>【6】貴族 (対決):</strong> 相手1人と手札を見せ合い、数字の小さい方が脱落（同数は両者脱落）。</div>
             <div class="card-rule-item"><strong>【7】賢者 (選択):</strong> 次の自分の手番で山札から3枚引いて好きな1枚を選び、残りを山札へ戻す。</div>
             <div class="card-rule-item"><strong>【8】精霊 (交換):</strong> 相手1人と手札を交換する。</div>
-            <div class="card-rule-item"><strong>【9】皇帝 (公開処刑):</strong> 相手に引かせ2枚公開、1枚処刑。※英雄は転生できず即脱落！</div>
+            <div class="card-rule-item"><strong>【9】皇帝 (公開処刑):</strong> 相手に1枚引かせ2枚とも公開。1枚処刑。※英雄は転生できず即脱落！</div>
             <div class="card-rule-item"><strong>【10】英雄 (潜伏・転生):</strong> 出せない。皇帝以外で捨てられたら転生札で復活。</div>
           </section>
         </div>
@@ -723,10 +714,18 @@
     let mqttClient = null;
     let roomTopic = "";
     let isHost = false;
-    const MY_ID = "usr_" + Math.random().toString(36).substr(2, 9);
+    let currentRoomId = "";
+    
+    // セッション永続化（リロードしてもIDを維持）
+    let MY_ID = sessionStorage.getItem("xeno_my_id");
+    if (!MY_ID) {
+      MY_ID = "usr_" + Math.random().toString(36).substr(2, 9);
+      sessionStorage.setItem("xeno_my_id", MY_ID);
+    }
     let myName = "プレイヤー1";
 
     let gameState = {
+      hostId: "",
       players: [],
       turnIndex: 0,
       deck: [],
@@ -738,6 +737,7 @@
 
     let selectedHandCard = null;
     let autoReturnTimerId = null;
+    let heartbeatTimerId = null;
 
     const lobbyScreen = document.getElementById("lobbyScreen");
     const waitingScreen = document.getElementById("waitingScreen");
@@ -777,19 +777,9 @@
         navigator.clipboard.writeText(inviteUrl).then(() => alert("招待URLをコピーしました！"));
       };
 
-      document.getElementById("createRoomBtn").onclick = () => {
-        const customId = document.getElementById("customRoomIdInput").value.trim();
-        if (!customId) return alert("合言葉を入力してください");
-        myName = document.getElementById("playerNameInput").value.trim() || "プレイヤー1";
-        connectMQTT(true, customId);
-      };
-
-      document.getElementById("joinRoomBtn").onclick = () => {
-        const customId = document.getElementById("customRoomIdInput").value.trim();
-        if (!customId) return alert("合言葉を入力してください");
-        myName = document.getElementById("playerNameInput").value.trim() || "プレイヤー2";
-        connectMQTT(false, customId);
-      };
+      // どちらを押してもスマート合流
+      document.getElementById("createRoomBtn").onclick = () => enterRoom(true);
+      document.getElementById("joinRoomBtn").onclick = () => enterRoom(false);
 
       document.getElementById("startGameBtn").onclick = () => {
         if (gameState.players.length < 2) return;
@@ -809,34 +799,42 @@
       };
     });
 
-    /* ================= MQTT 通信 ================= */
-    function connectMQTT(asHost, roomId) {
-      isHost = asHost;
-      roomTopic = "xeno/v10/room_" + roomId;
+    /* ================= 堅牢な通信基盤（自動合流・ハートビート・Retain） ================= */
+    function enterRoom(preferredHost) {
+      const customId = document.getElementById("customRoomIdInput").value.trim();
+      if (!customId) return alert("合言葉を入力してください");
+      myName = document.getElementById("playerNameInput").value.trim() || (preferredHost ? "プレイヤー1" : "プレイヤー2");
+      currentRoomId = customId;
+      connectMQTT(preferredHost, customId);
+    }
 
+    function connectMQTT(preferredHost, roomId) {
+      roomTopic = "xeno/v11/room_" + roomId;
+
+      if (mqttClient) {
+        try { mqttClient.end(true); } catch(e){}
+      }
+
+      // 高速公開ブローカー（TLS）
       mqttClient = mqtt.connect("wss://broker.emqx.io:8084/mqtt", {
         clientId: MY_ID,
         clean: true,
-        connectTimeout: 5000
+        connectTimeout: 5000,
+        reconnectPeriod: 2000
       });
 
       mqttClient.on("connect", () => {
-        mqttClient.subscribe(roomTopic, (err) => {
+        mqttClient.subscribe(roomTopic, { qos: 1 }, (err) => {
           if (!err) {
             document.getElementById("displayRoomId").innerText = roomId;
             lobbyScreen.classList.add("hidden");
             waitingScreen.classList.remove("hidden");
 
-            if (isHost) {
-              document.getElementById("hostActionRow").classList.remove("hidden");
-              document.getElementById("guestWaitMsg").classList.add("hidden");
-              gameState.players = [{ id: MY_ID, name: myName, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false }];
-              updateMemberList();
-            } else {
-              document.getElementById("hostActionRow").classList.add("hidden");
-              document.getElementById("guestWaitMsg").classList.remove("hidden");
-              sendMsg({ type: "JOIN", id: MY_ID, name: myName });
-            }
+            // ハートビート開始（1.5秒ごとに参加信号を送信）
+            startHeartbeat();
+
+            // 接続直後に自発的プレゼンス送信
+            sendPresence();
           }
         });
       });
@@ -851,106 +849,194 @@
       });
     }
 
-    function sendMsg(msg) {
+    // メッセージ送信（保持オプション対応）
+    function sendMsg(msg, retain = false) {
       if (mqttClient && mqttClient.connected) {
-        mqttClient.publish(roomTopic, JSON.stringify(msg));
+        mqttClient.publish(roomTopic, JSON.stringify(msg), { qos: 1, retain: retain });
       }
     }
 
+    // ハートビート：待機中に1.5秒ごとに信号を送り、後から入った相手とも絶対にすれ違わない
+    function startHeartbeat() {
+      if (heartbeatTimerId) clearInterval(heartbeatTimerId);
+      heartbeatTimerId = setInterval(() => {
+        sendPresence();
+      }, 1500);
+    }
+
+    function sendPresence() {
+      sendMsg({ type: "PRESENCE", id: MY_ID, name: myName, phase: gameState.phase });
+    }
+
     function handleNetworkMessage(msg) {
-      if (msg.type === "JOIN" && isHost) {
-        if (!gameState.players.some(p => p.id === msg.id)) {
-          if (gameState.players.length >= 4) {
-            sendMsg({ type: "ERROR", targetId: msg.id, text: "満室です" });
-            return;
+      // 1. 生存確認＆自動ホスト調停
+      if (msg.type === "PRESENCE") {
+        // ホスト未決定なら最も古い人がホスト
+        if (!gameState.hostId) {
+          gameState.hostId = MY_ID;
+          isHost = true;
+        }
+
+        // ホスト側：新規プレイヤーの自動登録＆同期返信
+        if (isHost) {
+          let updated = false;
+          let player = gameState.players.find(p => p.id === msg.id);
+          if (!player && gameState.players.length < 4 && gameState.phase === "init") {
+            gameState.players.push({
+              id: msg.id,
+              name: msg.name,
+              hand: [],
+              discards: [],
+              isProtected: false,
+              hasKenja: false,
+              isEliminated: false
+            });
+            updated = true;
+          } else if (player && player.name !== msg.name) {
+            player.name = msg.name;
+            updated = true;
           }
-          gameState.players.push({ id: msg.id, name: msg.name, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false });
-          updateMemberList();
-          sendMsg({ type: "SYNC", state: gameState });
-          if (gameState.players.length >= 2) {
-            document.getElementById("startGameBtn").disabled = false;
+
+          if (updated) {
+            updateMemberList();
+            broadcastState();
+          } else {
+            // 定期的なSYNC再配信（取りこぼし完全防止）
+            broadcastState();
           }
         }
-      } else if (msg.type === "SYNC") {
+      }
+
+      // 2. 状態同期（Retainメッセージや再配信を受信）
+      else if (msg.type === "SYNC") {
+        // ホストIDの同期
+        if (msg.state.hostId) {
+          gameState.hostId = msg.state.hostId;
+          isHost = (gameState.hostId === MY_ID);
+        }
+
         const prevTurn = gameState.turnIndex;
         const prevPhase = gameState.phase;
         gameState = msg.state;
         updateMemberList();
 
+        // 待機画面とゲーム画面の切り替え
         if (gameState.phase === "init") {
           gameOverModal.classList.add("hidden");
           gameScreen.classList.add("hidden");
           waitingScreen.classList.remove("hidden");
-          if (isHost && gameState.players.length >= 2) {
-            document.getElementById("startGameBtn").disabled = false;
+          
+          if (isHost) {
+            document.getElementById("hostActionRow").classList.remove("hidden");
+            document.getElementById("guestWaitMsg").classList.add("hidden");
+            document.getElementById("startGameBtn").disabled = (gameState.players.length < 2);
+          } else {
+            document.getElementById("hostActionRow").classList.add("hidden");
+            document.getElementById("guestWaitMsg").classList.remove("hidden");
           }
           return;
         }
 
+        // ゲーム進行中
         if (gameState.phase !== "init") {
           waitingScreen.classList.add("hidden");
           gameScreen.classList.remove("hidden");
         }
         renderGame();
 
+        // 自分のターン通知
         if (getCurrentPlayer().id === MY_ID && prevTurn !== gameState.turnIndex && gameState.phase === "action") {
           sounds.playMyTurn();
           if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
         } else if (prevPhase !== gameState.phase) {
           sounds.playDraw();
         }
+      }
 
-      } else if (msg.type === "ACTION" && isHost) {
+      // 3. アクション（ホストが処理）
+      else if (msg.type === "ACTION" && isHost) {
         processCardPlay(msg.playerId, msg.cardRank, msg.targetId, msg.extra);
+      }
 
-      } else if (msg.type === "KENJA_SELECT_REQUEST" && msg.targetUserId === MY_ID) {
+      // 4. 各種モーダル選択要請
+      else if (msg.type === "KENJA_SELECT_REQUEST" && msg.targetUserId === MY_ID) {
         showChoiceModal("【賢者：選択】", "手札に加える1枚を選択してください（残りは山札へ戻ります）", msg.cards, (selected) => {
           sendMsg({ type: "KENJA_SELECTED", playerId: MY_ID, chosenCard: selected });
         });
-
-      } else if (msg.type === "KENJA_SELECTED" && isHost) {
+      }
+      else if (msg.type === "KENJA_SELECTED" && isHost) {
         applyKenjaChoice(msg.playerId, msg.chosenCard);
-
-      } else if (msg.type === "REAPER_SELECT_REQUEST" && msg.executorId === MY_ID) {
+      }
+      else if (msg.type === "REAPER_SELECT_REQUEST" && msg.executorId === MY_ID) {
         showReaperChoiceModal(msg.targetName, (chosenIndex) => {
           sendMsg({ type: "REAPER_CHOSEN", executorId: MY_ID, targetId: msg.targetId, chosenIndex: chosenIndex });
         });
-
-      } else if (msg.type === "REAPER_CHOSEN" && isHost) {
+      }
+      else if (msg.type === "REAPER_CHOSEN" && isHost) {
         const executor = gameState.players.find(p => p.id === msg.executorId);
         const target = gameState.players.find(p => p.id === msg.targetId);
         applyReaperChoice(executor, target, msg.chosenIndex);
-
-      } else if (msg.type === "EXECUTE_SELECT_REQUEST" && msg.executorId === MY_ID) {
+      }
+      else if (msg.type === "EXECUTE_SELECT_REQUEST" && msg.executorId === MY_ID) {
         showChoiceModal("【公開処刑】捨てさせるカードを選択", `${msg.targetName} の手札から1枚選んでください`, msg.hand, (chosen) => {
           sendMsg({ type: "EXECUTE_CHOSEN", executorId: MY_ID, targetId: msg.targetId, chosenCard: chosen, isEmperor: msg.isEmperor });
         });
-
-      } else if (msg.type === "EXECUTE_CHOSEN" && isHost) {
+      }
+      else if (msg.type === "EXECUTE_CHOSEN" && isHost) {
         const executor = gameState.players.find(p => p.id === msg.executorId);
         const target = gameState.players.find(p => p.id === msg.targetId);
         applyExecutionChoice(executor, target, msg.chosenCard, msg.isEmperor);
-
-      } else if (msg.type === "DUEL_SHOW" && (msg.player1Id === MY_ID || msg.player2Id === MY_ID)) {
+      }
+      else if (msg.type === "DUEL_SHOW" && (msg.player1Id === MY_ID || msg.player2Id === MY_ID)) {
         showDuelModal(msg);
-
-      } else if (msg.type === "PRIVATE_REVEAL" && msg.targetUserId === MY_ID) {
+      }
+      else if (msg.type === "PRIVATE_REVEAL" && msg.targetUserId === MY_ID) {
         alert(`【透視結果】\n${msg.targetName} の手札は【${msg.cards.map(c => `${c}:${CARDS[c].name}`).join(", ")}】です。`);
+      }
+    }
 
-      } else if (msg.type === "ERROR" && msg.targetId === MY_ID) {
-        alert(msg.text);
+    // ホストから全体へ最新ステートをRetain配信
+    function broadcastState() {
+      if (isHost) {
+        sendMsg({ type: "SYNC", state: gameState }, true);
       }
     }
 
     function updateMemberList() {
+      // 自分がリストになければ初期追加
+      if (!gameState.players.some(p => p.id === MY_ID)) {
+        gameState.players.push({
+          id: MY_ID,
+          name: myName,
+          hand: [],
+          discards: [],
+          isProtected: false,
+          hasKenja: false,
+          isEliminated: false
+        });
+      }
+
       const list = document.getElementById("memberList");
       list.innerHTML = "";
       gameState.players.forEach(p => {
         const li = document.createElement("li");
-        li.innerHTML = `<span>${p.name}</span> <span style="color:var(--gold); font-size:12px;">${p.id === MY_ID ? "(あなた)" : ""}</span>`;
+        const isHostPlayer = (p.id === gameState.hostId);
+        li.innerHTML = `
+          <span>${p.name} ${isHostPlayer ? "👑(ホスト)" : ""}</span>
+          <span style="color:var(--gold); font-size:12px;">${p.id === MY_ID ? "(あなた)" : ""}</span>
+        `;
         list.appendChild(li);
       });
       document.getElementById("playerCount").innerText = gameState.players.length;
+
+      if (isHost) {
+        document.getElementById("hostActionRow").classList.remove("hidden");
+        document.getElementById("guestWaitMsg").classList.add("hidden");
+        document.getElementById("startGameBtn").disabled = (gameState.players.length < 2);
+      } else {
+        document.getElementById("hostActionRow").classList.add("hidden");
+        document.getElementById("guestWaitMsg").classList.remove("hidden");
+      }
     }
 
     /* ================= ゲーム進行ロジック ================= */
@@ -988,12 +1074,14 @@
       waitingScreen.classList.add("hidden");
       gameScreen.classList.remove("hidden");
       gameOverModal.classList.add("hidden");
-      sendMsg({ type: "SYNC", state: gameState });
 
+      broadcastState();
       startTurn();
     }
 
-    function getCurrentPlayer() { return gameState.players[gameState.turnIndex]; }
+    function getCurrentPlayer() {
+      return gameState.players[gameState.turnIndex] || gameState.players[0];
+    }
 
     function startTurn() {
       const current = getCurrentPlayer();
@@ -1024,11 +1112,11 @@
           sendMsg({ type: "KENJA_SELECT_REQUEST", targetUserId: current.id, cards: drawn });
         }
         gameState.phase = "action";
-        syncAndRender();
+        broadcastState();
       } else {
         current.hand.push(gameState.deck.pop());
         gameState.phase = "action";
-        syncAndRender();
+        broadcastState();
       }
     }
 
@@ -1045,7 +1133,7 @@
       delete player._tempKenjaDrawn;
       addLog(`${player.name} は選んだカードを手札に加え、山札をシャッフルした。`);
       gameState.phase = "action";
-      syncAndRender();
+      broadcastState();
     }
 
     function nextTurn() {
@@ -1105,7 +1193,7 @@
       if ([5, 9].includes(cardRank) || isSecondBoy) {
         if (gameState.deck.length === 0) {
           addLog(`山札が0枚のため【${CARDS[cardRank].name}】の効果は不発。即ゲーム終了判定となります。`);
-          syncAndRender();
+          broadcastState();
           setTimeout(endGameByDeckEmpty, 1000);
           return;
         }
@@ -1297,7 +1385,7 @@
     }
 
     function finishAction() {
-      syncAndRender();
+      broadcastState();
       setTimeout(nextTurn, 900);
     }
 
@@ -1309,7 +1397,7 @@
       document.getElementById("gameOverTitle").innerText = winner ? `🏆 勝者：${winner.name}` : "引き分け";
       document.getElementById("gameOverDesc").innerText = winner ? `他のプレイヤーが全員脱落しました！` : "全員が相打ち脱落しました。";
       showGameOverAndStartTimer();
-      syncAndRender();
+      broadcastState();
     }
 
     function endGameByDeckEmpty() {
@@ -1328,7 +1416,7 @@
         document.getElementById("gameOverDesc").innerText = `手札【${alive[0].hand[0]}: ${CARDS[alive[0].hand[0]].name}】により勝利！`;
       }
       showGameOverAndStartTimer();
-      syncAndRender();
+      broadcastState();
     }
 
     function revealRebornAtEnd() {
@@ -1371,7 +1459,7 @@
           p.hasKenja = false;
           p.isEliminated = false;
         });
-        sendMsg({ type: "SYNC", state: gameState });
+        broadcastState();
       } else {
         gameOverModal.classList.add("hidden");
         gameScreen.classList.add("hidden");
@@ -1379,12 +1467,7 @@
       }
     }
 
-    function syncAndRender() {
-      if (isHost) sendMsg({ type: "SYNC", state: gameState });
-      renderGame();
-    }
-
-    /* ================= UI描画（中央基準＆真ん中向き展開） ================= */
+    /* ================= UI描画 ================= */
     function setCardImage(el, filename) {
       const primaryUrl = getAssetUrl(filename);
       const fallbackUrl = getAssetUrl("Images/" + filename);
@@ -1447,7 +1530,7 @@
       document.getElementById("myGuardBadge").classList.toggle("hidden", !me.isProtected);
       document.getElementById("myKenjaBadge").classList.toggle("hidden", !me.hasKenja);
 
-      // ★4. 自分の捨て札（中央基準で左右均等展開、頭は真ん中向き）
+      // 自分の捨て札
       const myDiscardLane = document.getElementById("myDiscardLane");
       myDiscardLane.innerHTML = "";
       me.discards.forEach((c, idx) => {
@@ -1457,7 +1540,7 @@
         myDiscardLane.appendChild(cardEl);
       });
 
-      // 5. 自分の手札
+      // 自分の手札
       const myHand = document.getElementById("myHand");
       myHand.innerHTML = "";
       me.hand.forEach(c => {
@@ -1483,7 +1566,7 @@
         myHand.appendChild(el);
       });
 
-      // 1. 最上段：相手情報バー
+      // 相手情報バー
       const oppBar = document.getElementById("opponentsBar");
       oppBar.innerHTML = "";
       opponents.forEach(opp => {
@@ -1500,7 +1583,7 @@
         oppBar.appendChild(box);
       });
 
-      // ★2. 相手の場（真ん中を向き、中央基準で左右均等展開）
+      // 相手の捨て札
       const oppFieldContainer = document.getElementById("oppFieldContainer");
       oppFieldContainer.innerHTML = "";
       opponents.forEach(opp => {
