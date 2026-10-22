@@ -151,7 +151,7 @@
       font-size: 13px;
     }
 
-    /* プレイマット */
+    /* ================= プレイマット盤面 ================= */
     .playmat {
       width: 100vw;
       height: calc(100vh - 42px);
@@ -193,7 +193,7 @@
     .opp-name { font-size: 12px; font-weight: 700; color: #cbd5e0; }
     .opp-cards { display: flex; gap: 3px; }
 
-    /* 捨て札ゾーン（中央展開） */
+    /* 捨て札ゾーン */
     .field-zone {
       display: flex;
       flex-direction: column;
@@ -222,7 +222,6 @@
       letter-spacing: 1px;
       margin-bottom: 2px;
     }
-
     .lane-cards {
       display: flex;
       justify-content: center;
@@ -235,7 +234,6 @@
       transition: transform 0.2s, z-index 0.2s;
     }
 
-    /* 相手の捨て札：真ん中向き */
     .opp-discard-card {
       transform: rotate(180deg);
     }
@@ -251,7 +249,6 @@
       left: auto;
     }
 
-    /* 自分の捨て札：真ん中向き */
     .my-discard-card {
       transform: rotate(0deg);
     }
@@ -272,19 +269,21 @@
     .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .zone-label { font-size: 9px; color: #9ca3af; }
 
-    /* カード本体 */
+    /* ★カード本体（auto 122%で白い写真余白を外側にトリミング） */
     .card {
       width: 78px;
       height: 116px;
       border-radius: 6px;
       position: relative;
-      background-size: cover;
-      background-position: center;
+      background-size: auto 122%;
+      background-position: center center;
+      background-repeat: no-repeat;
       box-shadow: 0 4px 12px rgba(0,0,0,0.85);
       border: 1px solid var(--border);
       cursor: pointer;
       transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
       background-color: #111827;
+      overflow: hidden;
     }
     .card.selected {
       transform: translateY(-14px) scale(1.06);
@@ -293,31 +292,42 @@
     }
     .card.disabled { opacity: 0.4; cursor: not-allowed; }
 
+    /* ★ミニカード（捨て札用）も余白をカット */
     .card-mini {
       width: 40px;
       height: 58px;
       border-radius: 4px;
       border: 1px solid #5a4b26;
-      background-size: cover;
-      background-position: center;
+      background-size: auto 122%;
+      background-position: center center;
+      background-repeat: no-repeat;
       background-color: #111827;
       flex-shrink: 0;
       position: relative;
       box-shadow: 0 2px 6px rgba(0,0,0,0.7);
+      overflow: hidden;
     }
-    .card-back { background-size: cover; background-position: center; }
+    .card-back {
+      background-size: auto 122%;
+      background-position: center center;
+      background-repeat: no-repeat;
+    }
 
+    /* ★山札（裏面の余白もカット） */
     .deck-card {
       width: 68px;
       height: 100px;
       border-radius: 5px;
-      background-size: cover;
-      background-position: center;
+      background-size: auto 122%;
+      background-position: center center;
+      background-repeat: no-repeat;
       border: 1px solid var(--gold);
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+      background-color: #111827;
+      overflow: hidden;
     }
     .deck-count {
       background: rgba(0, 0, 0, 0.9);
@@ -329,17 +339,22 @@
       padding: 1px 6px;
       border-radius: 8px;
     }
+
+    /* ★転生札（余白カット） */
     .reborn-card {
       width: 68px;
       height: 100px;
       border-radius: 5px;
-      background-size: cover;
-      background-position: center;
+      background-size: auto 122%;
+      background-position: center center;
+      background-repeat: no-repeat;
       border: 1px dashed var(--gold);
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+      background-color: #111827;
+      overflow: hidden;
     }
     .horizontal { transform: rotate(90deg); margin: 10px 0; }
     .reborn-text {
@@ -808,7 +823,7 @@
     }
 
     function connectMQTT(preferredHost, roomId) {
-      roomTopic = "xeno/v12/room_" + roomId;
+      roomTopic = "xeno/v13/room_" + roomId;
 
       if (mqttClient) {
         try { mqttClient.end(true); } catch(e){}
@@ -828,7 +843,6 @@
             lobbyScreen.classList.add("hidden");
             waitingScreen.classList.remove("hidden");
 
-            // 待機中のみハートビート送信
             startHeartbeat();
             sendPresence();
           }
@@ -853,7 +867,6 @@
 
     function startHeartbeat() {
       if (heartbeatTimerId) clearInterval(heartbeatTimerId);
-      // 待機画面のときだけハートビート送信
       heartbeatTimerId = setInterval(() => {
         if (gameState.phase === "init") {
           sendPresence();
@@ -928,7 +941,6 @@
         }
 
         if (gameState.phase !== "init") {
-          // ゲーム中はハートビートを止めてチカチカを防止！
           if (heartbeatTimerId) clearInterval(heartbeatTimerId);
           waitingScreen.classList.add("hidden");
           gameScreen.classList.remove("hidden");
@@ -1028,7 +1040,6 @@
     /* ================= ゲーム進行ロジック ================= */
     function initNewDeckAndDeal() {
       if (autoReturnTimerId) clearInterval(autoReturnTimerId);
-      // ゲーム開始と同時にハートビートを完全停止（チカチカ防止）
       if (heartbeatTimerId) clearInterval(heartbeatTimerId);
 
       let deck = [];
@@ -1045,7 +1056,7 @@
         p.hand = [deck.pop()];
         p.discards = [];
         p.isProtected = false;
-        p.hasKenja = false; // 全員リセット
+        p.hasKenja = false;
         p.isEliminated = false;
       });
 
@@ -1347,9 +1358,8 @@
       finishAction();
     }
 
-    // ★英雄（10）の転生処理（殺された直前の賢者フラグを確実に強制リセット！）
     function executeReborn(player) {
-      player.hasKenja = false; // 直前の賢者効果は完全にクリア！
+      player.hasKenja = false;
 
       while (player.hand.length > 0) {
         const c = player.hand.pop();
@@ -1368,7 +1378,7 @@
 
     function eliminatePlayer(player) {
       player.isEliminated = true;
-      player.hasKenja = false; // 脱落者も賢者効果をクリア
+      player.hasKenja = false;
       while (player.hand.length > 0) {
         const c = player.hand.pop();
         player.discards.push(c);
@@ -1457,13 +1467,11 @@
         gameScreen.classList.add("hidden");
         waitingScreen.classList.remove("hidden");
       }
-      // 待機部屋に戻ったらハートビート再開
       startHeartbeat();
     }
 
-    /* ================= UI描画（チカチカしない即時描画） ================= */
+    /* ================= UI描画 ================= */
     function setCardImage(el, filename) {
-      // 非同期onload待ちを廃止し、キャッシュから即座に適用（チラつき完全防止）
       el.style.backgroundImage = `url('${getAssetUrl(filename)}')`;
     }
 
