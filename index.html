@@ -222,6 +222,7 @@
       letter-spacing: 1px;
       margin-bottom: 2px;
     }
+
     .lane-cards {
       display: flex;
       justify-content: center;
@@ -234,7 +235,7 @@
       transition: transform 0.2s, z-index 0.2s;
     }
 
-    /* 相手の捨て札：真ん中（下方向）を向く */
+    /* 相手の捨て札：真ん中向き */
     .opp-discard-card {
       transform: rotate(180deg);
     }
@@ -250,7 +251,7 @@
       left: auto;
     }
 
-    /* 自分の捨て札：真ん中（上方向）を向く */
+    /* 自分の捨て札：真ん中向き */
     .my-discard-card {
       transform: rotate(0deg);
     }
@@ -716,7 +717,6 @@
     let isHost = false;
     let currentRoomId = "";
     
-    // セッション永続化（リロードしてもIDを維持）
     let MY_ID = sessionStorage.getItem("xeno_my_id");
     if (!MY_ID) {
       MY_ID = "usr_" + Math.random().toString(36).substr(2, 9);
@@ -777,7 +777,6 @@
         navigator.clipboard.writeText(inviteUrl).then(() => alert("招待URLをコピーしました！"));
       };
 
-      // どちらを押してもスマート合流
       document.getElementById("createRoomBtn").onclick = () => enterRoom(true);
       document.getElementById("joinRoomBtn").onclick = () => enterRoom(false);
 
@@ -799,7 +798,7 @@
       };
     });
 
-    /* ================= 堅牢な通信基盤（自動合流・ハートビート・Retain） ================= */
+    /* ================= 堅牢な通信基盤 ================= */
     function enterRoom(preferredHost) {
       const customId = document.getElementById("customRoomIdInput").value.trim();
       if (!customId) return alert("合言葉を入力してください");
@@ -809,13 +808,12 @@
     }
 
     function connectMQTT(preferredHost, roomId) {
-      roomTopic = "xeno/v11/room_" + roomId;
+      roomTopic = "xeno/v12/room_" + roomId;
 
       if (mqttClient) {
         try { mqttClient.end(true); } catch(e){}
       }
 
-      // 高速公開ブローカー（TLS）
       mqttClient = mqtt.connect("wss://broker.emqx.io:8084/mqtt", {
         clientId: MY_ID,
         clean: true,
@@ -830,10 +828,8 @@
             lobbyScreen.classList.add("hidden");
             waitingScreen.classList.remove("hidden");
 
-            // ハートビート開始（1.5秒ごとに参加信号を送信）
+            // 待機中のみハートビート送信
             startHeartbeat();
-
-            // 接続直後に自発的プレゼンス送信
             sendPresence();
           }
         });
@@ -849,18 +845,21 @@
       });
     }
 
-    // メッセージ送信（保持オプション対応）
     function sendMsg(msg, retain = false) {
       if (mqttClient && mqttClient.connected) {
         mqttClient.publish(roomTopic, JSON.stringify(msg), { qos: 1, retain: retain });
       }
     }
 
-    // ハートビート：待機中に1.5秒ごとに信号を送り、後から入った相手とも絶対にすれ違わない
     function startHeartbeat() {
       if (heartbeatTimerId) clearInterval(heartbeatTimerId);
+      // 待機画面のときだけハートビート送信
       heartbeatTimerId = setInterval(() => {
-        sendPresence();
+        if (gameState.phase === "init") {
+          sendPresence();
+        } else {
+          clearInterval(heartbeatTimerId);
+        }
       }, 1500);
     }
 
@@ -869,19 +868,16 @@
     }
 
     function handleNetworkMessage(msg) {
-      // 1. 生存確認＆自動ホスト調停
       if (msg.type === "PRESENCE") {
-        // ホスト未決定なら最も古い人がホスト
         if (!gameState.hostId) {
           gameState.hostId = MY_ID;
           isHost = true;
         }
 
-        // ホスト側：新規プレイヤーの自動登録＆同期返信
-        if (isHost) {
+        if (isHost && gameState.phase === "init") {
           let updated = false;
           let player = gameState.players.find(p => p.id === msg.id);
-          if (!player && gameState.players.length < 4 && gameState.phase === "init") {
+          if (!player && gameState.players.length < 4) {
             gameState.players.push({
               id: msg.id,
               name: msg.name,
@@ -900,16 +896,11 @@
           if (updated) {
             updateMemberList();
             broadcastState();
-          } else {
-            // 定期的なSYNC再配信（取りこぼし完全防止）
-            broadcastState();
           }
         }
       }
 
-      // 2. 状態同期（Retainメッセージや再配信を受信）
       else if (msg.type === "SYNC") {
-        // ホストIDの同期
         if (msg.state.hostId) {
           gameState.hostId = msg.state.hostId;
           isHost = (gameState.hostId === MY_ID);
@@ -920,7 +911,6 @@
         gameState = msg.state;
         updateMemberList();
 
-        // 待機画面とゲーム画面の切り替え
         if (gameState.phase === "init") {
           gameOverModal.classList.add("hidden");
           gameScreen.classList.add("hidden");
@@ -937,14 +927,14 @@
           return;
         }
 
-        // ゲーム進行中
         if (gameState.phase !== "init") {
+          // ゲーム中はハートビートを止めてチカチカを防止！
+          if (heartbeatTimerId) clearInterval(heartbeatTimerId);
           waitingScreen.classList.add("hidden");
           gameScreen.classList.remove("hidden");
         }
         renderGame();
 
-        // 自分のターン通知
         if (getCurrentPlayer().id === MY_ID && prevTurn !== gameState.turnIndex && gameState.phase === "action") {
           sounds.playMyTurn();
           if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
@@ -953,12 +943,10 @@
         }
       }
 
-      // 3. アクション（ホストが処理）
       else if (msg.type === "ACTION" && isHost) {
         processCardPlay(msg.playerId, msg.cardRank, msg.targetId, msg.extra);
       }
 
-      // 4. 各種モーダル選択要請
       else if (msg.type === "KENJA_SELECT_REQUEST" && msg.targetUserId === MY_ID) {
         showChoiceModal("【賢者：選択】", "手札に加える1枚を選択してください（残りは山札へ戻ります）", msg.cards, (selected) => {
           sendMsg({ type: "KENJA_SELECTED", playerId: MY_ID, chosenCard: selected });
@@ -995,7 +983,6 @@
       }
     }
 
-    // ホストから全体へ最新ステートをRetain配信
     function broadcastState() {
       if (isHost) {
         sendMsg({ type: "SYNC", state: gameState }, true);
@@ -1003,7 +990,6 @@
     }
 
     function updateMemberList() {
-      // 自分がリストになければ初期追加
       if (!gameState.players.some(p => p.id === MY_ID)) {
         gameState.players.push({
           id: MY_ID,
@@ -1042,6 +1028,8 @@
     /* ================= ゲーム進行ロジック ================= */
     function initNewDeckAndDeal() {
       if (autoReturnTimerId) clearInterval(autoReturnTimerId);
+      // ゲーム開始と同時にハートビートを完全停止（チカチカ防止）
+      if (heartbeatTimerId) clearInterval(heartbeatTimerId);
 
       let deck = [];
       for (let rank = 1; rank <= 10; rank++) {
@@ -1057,7 +1045,7 @@
         p.hand = [deck.pop()];
         p.discards = [];
         p.isProtected = false;
-        p.hasKenja = false;
+        p.hasKenja = false; // 全員リセット
         p.isEliminated = false;
       });
 
@@ -1359,7 +1347,10 @@
       finishAction();
     }
 
+    // ★英雄（10）の転生処理（殺された直前の賢者フラグを確実に強制リセット！）
     function executeReborn(player) {
+      player.hasKenja = false; // 直前の賢者効果は完全にクリア！
+
       while (player.hand.length > 0) {
         const c = player.hand.pop();
         player.discards.push(c);
@@ -1377,6 +1368,7 @@
 
     function eliminatePlayer(player) {
       player.isEliminated = true;
+      player.hasKenja = false; // 脱落者も賢者効果をクリア
       while (player.hand.length > 0) {
         const c = player.hand.pop();
         player.discards.push(c);
@@ -1465,16 +1457,14 @@
         gameScreen.classList.add("hidden");
         waitingScreen.classList.remove("hidden");
       }
+      // 待機部屋に戻ったらハートビート再開
+      startHeartbeat();
     }
 
-    /* ================= UI描画 ================= */
+    /* ================= UI描画（チカチカしない即時描画） ================= */
     function setCardImage(el, filename) {
-      const primaryUrl = getAssetUrl(filename);
-      const fallbackUrl = getAssetUrl("Images/" + filename);
-      const img = new Image();
-      img.src = primaryUrl;
-      img.onload = () => { el.style.backgroundImage = `url('${primaryUrl}')`; };
-      img.onerror = () => { el.style.backgroundImage = `url('${fallbackUrl}')`; };
+      // 非同期onload待ちを廃止し、キャッシュから即座に適用（チラつき完全防止）
+      el.style.backgroundImage = `url('${getAssetUrl(filename)}')`;
     }
 
     function clearHandSelection() {
