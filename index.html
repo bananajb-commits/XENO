@@ -3,126 +3,120 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>XENO - 心理と直感のカードバトル</title>
+  <title>XENO</title>
   
-  <!-- 高級ダークファンタジーフォント (Cinzel × しっぽり明朝) -->
+  <!-- 高級フォント (Cinzel × しっぽり明朝) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Shippori+Mincho:wght@500;700;800&display=swap" rel="stylesheet">
 
-  <!-- PeerJS -->
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- 超高速リアルタイム通信 (MQTT over WebSocket) -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
   <style>
     :root {
       --gold-light: #fbe285;
-      --gold-mid: #d4af37;
+      --gold: #d4af37;
       --gold-dark: #8c6d1f;
-      --bg-dark: #07090c;
-      --panel-bg: rgba(14, 17, 23, 0.94);
-      --border-gold: rgba(212, 175, 55, 0.45);
+      --bg: #07090c;
+      --panel: rgba(14, 17, 23, 0.96);
+      --border: rgba(212, 175, 55, 0.4);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     
     body {
-      font-family: 'Shippori Mincho', 'Cinzel', serif;
-      background-color: var(--bg-dark);
+      font-family: 'Shippori Mincho', serif;
+      background-color: var(--bg);
       color: #eae6db;
       min-height: 100vh;
       overflow-x: hidden;
-      letter-spacing: 0.05em;
     }
 
     /* ヘッダー */
     .header {
-      height: 54px;
-      background: linear-gradient(180deg, rgba(20,24,32,0.98) 0%, rgba(10,12,16,0.95) 100%);
-      border-bottom: 1px solid var(--border-gold);
+      height: 52px;
+      background: rgba(10, 12, 16, 0.98);
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+      padding: 0 24px;
     }
     .logo {
       font-family: 'Cinzel', serif;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 900;
       letter-spacing: 6px;
-      background: linear-gradient(135deg, #fff2be 0%, var(--gold-mid) 50%, var(--gold-dark) 100%);
+      background: linear-gradient(135deg, #fff 0%, var(--gold) 50%, var(--gold-dark) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 10px rgba(212,175,55,0.4));
     }
 
-    /* ボタンスタイル */
+    /* ボタン */
     .btn {
       font-family: 'Shippori Mincho', serif;
-      padding: 9px 18px;
+      padding: 10px 18px;
       font-size: 13px;
       font-weight: 700;
       border-radius: 4px;
       cursor: pointer;
       border: 1px solid transparent;
-      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-      letter-spacing: 0.08em;
+      transition: all 0.2s ease;
+      letter-spacing: 0.1em;
     }
     .btn-gold {
-      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-mid) 50%, var(--gold-dark) 100%);
-      color: #0d0e12;
-      border-color: #ffe68a;
-      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 60%, var(--gold-dark) 100%);
+      color: #000;
+      border-color: #ffd700;
     }
     .btn-gold:hover:not(:disabled) {
       filter: brightness(1.2);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(212, 175, 55, 0.45);
+      transform: translateY(-1px);
     }
-    .btn-primary { background: #1a365d; color: #e2e8f0; border-color: #3182ce; }
-    .btn-primary:hover:not(:disabled) { background: #2b4c7e; transform: translateY(-1px); }
-    .btn-secondary { background: #1e2530; color: #cbd5e0; border-color: #3f4e65; }
-    .btn-secondary:hover:not(:disabled) { background: #2c3647; }
+    .btn-primary { background: #1a273b; color: #fff; border-color: #3b82f6; }
+    .btn-primary:hover:not(:disabled) { background: #243550; }
+    .btn-secondary { background: #171b22; color: #cbd5e0; border-color: #374151; }
+    .btn-secondary:hover:not(:disabled) { background: #222936; }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
     /* 画面切り替え */
     .screen {
-      min-height: calc(100vh - 54px);
+      min-height: calc(100vh - 52px);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 15px;
+      padding: 20px;
     }
     .hidden { display: none !important; }
 
     /* ロビーパネル */
     .lobby-card {
-      background: var(--panel-bg);
-      border: 1px solid var(--border-gold);
-      box-shadow: 0 15px 35px rgba(0,0,0,0.9), 0 0 25px rgba(212, 175, 55, 0.15);
-      border-radius: 10px;
-      padding: 30px;
-      max-width: 490px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.9), 0 0 20px rgba(212, 175, 55, 0.15);
+      border-radius: 8px;
+      padding: 36px 32px;
+      max-width: 440px;
       width: 100%;
-      position: relative;
     }
     .title {
       font-family: 'Cinzel', serif;
       text-align: center;
-      font-size: 26px;
-      font-weight: 700;
-      letter-spacing: 4px;
-      background: linear-gradient(135deg, #fff 0%, var(--gold-mid) 60%, var(--gold-dark) 100%);
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: 8px;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #ffffff 0%, var(--gold) 50%, var(--gold-dark) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .subtitle { text-align: center; color: #8e9bb0; font-size: 13px; margin-bottom: 22px; }
 
     .input-group { margin-bottom: 16px; }
     .input-group label {
       display: block;
-      font-size: 13px;
-      color: #cbd5e0;
+      font-size: 12px;
+      color: #9ca3af;
       margin-bottom: 6px;
       font-weight: 700;
     }
@@ -130,67 +124,66 @@
       width: 100%;
       padding: 11px 14px;
       background: #090c10;
-      border: 1px solid #374254;
-      border-radius: 5px;
+      border: 1px solid #374151;
+      border-radius: 4px;
       color: #fff;
       font-size: 15px;
       font-family: 'Shippori Mincho', serif;
-      transition: border-color 0.2s;
     }
     input[type="text"]:focus, select:focus {
       outline: none;
-      border-color: var(--gold-mid);
-      box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+      border-color: var(--gold);
     }
-    .btn-row { display: flex; gap: 10px; margin: 15px 0 10px; }
+    .btn-row { display: flex; gap: 10px; margin: 16px 0 10px; }
     .btn-row .btn { flex: 1; }
-    .divider { border: 0; border-top: 1px dashed rgba(212, 175, 55, 0.2); margin: 20px 0; }
+    .divider { border: 0; border-top: 1px dashed rgba(212, 175, 55, 0.25); margin: 20px 0; }
 
-    /* 通信デバッグログ窓 */
+    /* リアルタイムログ窓 */
     .connection-console {
       background: #050608;
-      border: 1px solid #232a36;
-      border-radius: 6px;
+      border: 1px solid #1f2937;
+      border-radius: 4px;
       padding: 10px;
-      margin-top: 15px;
+      margin-top: 16px;
       font-family: monospace;
       font-size: 11px;
-      color: #718096;
+      color: #9ca3af;
       max-height: 80px;
       overflow-y: auto;
       line-height: 1.5;
     }
-    .connection-console .log-ok { color: #48bb78; }
-    .connection-console .log-warn { color: var(--gold-mid); }
-    .connection-console .log-err { color: #f56565; }
+    .log-ok { color: #10b981; }
+    .log-warn { color: var(--gold); }
+    .log-err { color: #ef4444; }
 
     /* 待機ルーム */
     .room-id-box {
       background: #090c10;
       padding: 14px;
-      border: 1px solid var(--border-gold);
-      border-radius: 6px;
-      margin: 15px 0;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin: 16px 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .member-list { list-style: none; margin: 15px 0; }
+    .member-list { list-style: none; margin: 16px 0; }
     .member-list li {
       padding: 10px 14px;
-      background: #151b24;
-      margin-bottom: 8px;
-      border-radius: 5px;
-      border-left: 3px solid var(--gold-mid);
+      background: #111827;
+      margin-bottom: 6px;
+      border-radius: 4px;
+      border-left: 3px solid var(--gold);
       display: flex;
       justify-content: space-between;
       font-weight: 700;
+      font-size: 14px;
     }
 
     /* プレイマット (直下の mat.jpg を使用) */
     .playmat {
       width: 100vw;
-      height: calc(100vh - 54px);
+      height: calc(100vh - 52px);
       background-color: #07090c;
       background-image: url('mat.jpg');
       background-size: cover;
@@ -203,7 +196,7 @@
       position: relative;
     }
 
-    /* 対戦相手エリア（上部配置） */
+    /* 対戦相手エリア */
     .opponents-container {
       display: flex;
       justify-content: space-around;
@@ -211,28 +204,27 @@
       gap: 10px;
     }
     .opponent-box {
-      background: rgba(14, 17, 23, 0.9);
-      border: 1px solid #333f52;
+      background: rgba(14, 17, 23, 0.92);
+      border: 1px solid #374151;
       border-radius: 6px;
       padding: 8px 12px;
       min-width: 140px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
       transition: all 0.3s;
     }
     .opponent-box.active-turn {
-      border-color: var(--gold-mid);
+      border-color: var(--gold);
       box-shadow: 0 0 16px rgba(212, 175, 55, 0.6);
-      transform: scale(1.03);
+      transform: scale(1.02);
     }
     .opponent-box.eliminated { opacity: 0.3; filter: grayscale(1); }
     .opp-name { font-size: 13px; font-weight: 700; color: #cbd5e0; margin-bottom: 6px; }
-    .opp-cards { display: flex; gap: 6px; margin-bottom: 6px; }
+    .opp-cards { display: flex; gap: 5px; margin-bottom: 6px; }
     .opp-discard { display: flex; gap: 4px; overflow-x: auto; max-width: 170px; }
 
-    /* 中央テーブル（山札・転生札・アナウンスログ） */
+    /* 中央テーブル（山札・転生札・ログ） */
     .center-table {
       display: flex;
       justify-content: center;
@@ -242,9 +234,9 @@
     }
     .deck-zone { display: flex; align-items: center; gap: 20px; }
     .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .zone-label { font-size: 11px; color: #a0aec0; letter-spacing: 1px; }
+    .zone-label { font-size: 11px; color: #9ca3af; letter-spacing: 1px; }
 
-    /* カード本体 (直下の No1.jpg〜No10.jpg, card_back.jpg を使用) */
+    /* カードデザイン (直下の No1.jpg〜No10.jpg, card_back.jpg を使用) */
     .card {
       width: 86px;
       height: 128px;
@@ -253,25 +245,25 @@
       background-size: cover;
       background-position: center;
       box-shadow: 0 6px 14px rgba(0,0,0,0.8);
-      border: 1px solid var(--border-gold);
+      border: 1px solid var(--border);
       cursor: pointer;
-      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
-      background-color: #12151c;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      background-color: #111827;
     }
     .card:hover {
-      transform: translateY(-10px) scale(1.05);
-      box-shadow: 0 10px 22px rgba(212, 175, 55, 0.55);
+      transform: translateY(-8px) scale(1.04);
+      box-shadow: 0 10px 20px rgba(212, 175, 55, 0.55);
     }
-    .card.disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+    .card.disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
 
     .card-mini {
       width: 44px;
       height: 65px;
       border-radius: 3px;
-      border: 1px solid #5a4b26;
+      border: 1px solid #4b5563;
       background-size: cover;
       background-position: center;
-      background-color: #12151c;
+      background-color: #111827;
       flex-shrink: 0;
       position: relative;
     }
@@ -286,20 +278,19 @@
       border-radius: 6px;
       background-image: url('card_back.jpg');
       background-size: cover;
-      border: 1px solid var(--gold-mid);
+      border: 1px solid var(--gold);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
     }
     .deck-count {
-      background: rgba(0, 0, 0, 0.88);
-      border: 1px solid var(--gold-mid);
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid var(--gold);
       color: var(--gold-light);
       font-family: 'Cinzel', serif;
       font-size: 16px;
       font-weight: 700;
-      padding: 3px 9px;
+      padding: 2px 8px;
       border-radius: 12px;
     }
     .reborn-card {
@@ -308,7 +299,7 @@
       border-radius: 6px;
       background-image: url('card_back.jpg');
       background-size: cover;
-      border: 1px dashed var(--gold-mid);
+      border: 1px dashed var(--gold);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -323,33 +314,29 @@
       font-weight: 700;
     }
 
-    /* ゲーム内アナウンスログ */
     .game-log-box {
       width: 320px;
       height: 110px;
       background: rgba(8, 10, 14, 0.92);
-      border: 1px solid #333f52;
+      border: 1px solid #374151;
       border-radius: 6px;
       padding: 10px;
       overflow-y: auto;
       font-size: 12px;
       display: flex;
       flex-direction: column-reverse;
-      box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
     }
     .log-entry { margin-bottom: 5px; line-height: 1.45; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .log-highlight { color: var(--gold-light); font-weight: 700; }
 
-    /* 自分のエリア */
+    /* 自分エリア */
     .my-area {
-      background: rgba(14, 17, 23, 0.94);
-      border: 1px solid var(--border-gold);
+      background: rgba(14, 17, 23, 0.95);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 10px 18px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      box-shadow: 0 -4px 15px rgba(0,0,0,0.6);
     }
     .player-info-bar {
       display: flex;
@@ -358,13 +345,9 @@
       margin-bottom: 6px;
       width: 100%;
     }
-    .player-name {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--gold-light);
-    }
-    .player-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #232c3d; }
-    .guard-badge { background: #2b6cb0; color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+    .player-name { font-size: 16px; font-weight: 800; color: var(--gold-light); }
+    .player-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #1f2937; }
+    .guard-badge { background: #1d4ed8; color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; }
     
     .discard-line {
       display: flex;
@@ -383,7 +366,7 @@
       top: 3px;
       left: 3px;
       background: rgba(0,0,0,0.8);
-      border: 1px solid var(--gold-mid);
+      border: 1px solid var(--gold);
       color: var(--gold-light);
       font-family: 'Cinzel', serif;
       font-weight: 700;
@@ -405,8 +388,8 @@
       backdrop-filter: blur(4px);
     }
     .modal-content {
-      background: #11151e;
-      border: 1px solid var(--border-gold);
+      background: #111827;
+      border: 1px solid var(--border);
       box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
       border-radius: 8px;
       padding: 24px;
@@ -418,13 +401,13 @@
     .rule-scroll { max-height: 60vh; overflow-y: auto; font-size: 13px; line-height: 1.65; padding-right: 8px; }
     .rule-scroll section { margin-bottom: 16px; }
     .rule-scroll h3 { color: var(--gold-light); margin-bottom: 5px; }
-    .card-rule-item { background: rgba(255,255,255,0.04); padding: 6px 10px; margin-bottom: 5px; border-left: 2px solid var(--gold-mid); }
+    .card-rule-item { background: rgba(255,255,255,0.04); padding: 6px 10px; margin-bottom: 5px; border-left: 2px solid var(--gold); }
   </style>
 </head>
 <body>
   <div id="app">
     <header class="header">
-      <div class="logo">XENO <span style="font-size:12px; font-family:'Shippori Mincho'; color:#8e9bb0;">-ONLINE-</span></div>
+      <div class="logo">XENO</div>
       <div>
         <button id="ruleBtn" class="btn btn-secondary">📜 ルール解説</button>
       </div>
@@ -433,8 +416,7 @@
     <!-- ロビー画面 -->
     <div id="lobbyScreen" class="screen">
       <div class="lobby-card">
-        <h1 class="title">XENO MULTIPLAYER</h1>
-        <p class="subtitle">運命を欺き、真実を見抜け (最大4人)</p>
+        <h1 class="title">XENO</h1>
 
         <div class="input-group">
           <label>プレイヤー名</label>
@@ -443,31 +425,33 @@
 
         <div class="input-group">
           <label>合言葉（ルームID）</label>
-          <input type="text" id="customRoomIdInput" placeholder="例: 1124, battle777" value="1124">
+          <input type="text" id="customRoomIdInput" placeholder="例: 1124" value="1124">
         </div>
 
         <div>
           <div class="btn-row">
-            <button id="createRoomBtn" class="btn btn-gold">部屋を作る (ホスト)</button>
+            <button id="createRoomBtn" class="btn btn-gold">部屋を作る</button>
             <button id="joinRoomBtn" class="btn btn-primary">部屋に参加する</button>
           </div>
 
           <hr class="divider">
 
-          <h3 style="color:var(--gold-mid); font-size:13px; margin-bottom:8px; font-weight:700;">◆ 1台の端末で対面プレイ</h3>
-          <div style="display:flex; gap:10px;">
-            <select id="localPlayerCount">
-              <option value="2">2人対戦</option>
-              <option value="3">3人対戦</option>
-              <option value="4">4人対戦</option>
-            </select>
-            <button id="startLocalBtn" class="btn btn-secondary">対戦開始</button>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:12px; color:#9ca3af;">1台で対面プレイ</span>
+            <div style="display:flex; gap:8px;">
+              <select id="localPlayerCount" style="width:90px; padding:6px;">
+                <option value="2">2人</option>
+                <option value="3">3人</option>
+                <option value="4">4人</option>
+              </select>
+              <button id="startLocalBtn" class="btn btn-secondary" style="padding:6px 12px;">開始</button>
+            </div>
           </div>
         </div>
 
-        <!-- リアルタイム通信進行ログ -->
+        <!-- リアルタイム通信ログ -->
         <div class="connection-console" id="connectionConsole">
-          <div>[システム] 待機中。部屋を作るか参加してください。</div>
+          <div>[システム] 準備完了。部屋を作るか参加してください。</div>
         </div>
       </div>
     </div>
@@ -475,23 +459,23 @@
     <!-- 待機ルーム画面 -->
     <div id="waitingScreen" class="screen hidden">
       <div class="lobby-card">
-        <h2 style="color:var(--gold-light); font-size:20px; font-weight:800;">対戦待機ルーム</h2>
+        <h2 style="color:var(--gold-light); font-size:18px; font-weight:800; margin-bottom:12px;">対戦待機ルーム</h2>
         
         <div class="room-id-box">
           <div>
-            <div style="font-size:11px; color:#8e9bb0;">合言葉（ルームID）</div>
-            <strong id="displayRoomId" style="color:var(--gold-light); font-family:'Cinzel'; font-size:20px;">------</strong>
+            <div style="font-size:11px; color:#9ca3af;">合言葉</div>
+            <strong id="displayRoomId" style="color:var(--gold-light); font-family:'Cinzel'; font-size:22px;">------</strong>
           </div>
           <button id="copyInviteUrlBtn" class="btn btn-secondary" style="font-size:12px; padding:6px 12px;">🔗 招待URLをコピー</button>
         </div>
 
-        <h3 style="margin-top:15px; font-size:14px; font-weight:700;">参加者一覧 (<span id="playerCount">1</span>/4)</h3>
+        <h3 style="font-size:13px; font-weight:700; color:#9ca3af;">参加者 (<span id="playerCount">1</span>/4)</h3>
         <ul id="memberList" class="member-list"></ul>
 
         <div class="btn-row" id="hostActionRow">
           <button id="startGameBtn" class="btn btn-gold" disabled>ゲームを開始する (2人以上)</button>
         </div>
-        <div id="guestWaitMsg" class="hidden" style="text-align:center; color:#8e9bb0; font-size:13px; margin-top:12px;">
+        <div id="guestWaitMsg" class="hidden" style="text-align:center; color:#9ca3af; font-size:13px; margin-top:12px;">
           ホストがゲームを開始するのをお待ちください...
         </div>
       </div>
@@ -552,7 +536,7 @@
 
     <div id="ruleModal" class="modal-overlay hidden">
       <div class="modal-content" style="max-width:650px;">
-        <h2 style="color:var(--gold-mid); margin-bottom:10px;">XENO 公式ルール解説</h2>
+        <h2 style="color:var(--gold); margin-bottom:10px;">XENO 公式ルール解説</h2>
         <div class="rule-scroll">
           <section>
             <h3>■ 概要と勝利条件</h3>
@@ -592,8 +576,10 @@
       10: { rank: 10, name: "英雄", count: 1 }
     };
 
-    let peer = null, connections = [], hostConn = null;
-    let isHost = false, isOnline = false, myPlayerId = "", myName = "プレイヤー1";
+    let mqttClient = null;
+    let roomTopic = "";
+    let isHost = false, isOnline = false, myPlayerId = "p_" + Math.random().toString(36).substr(2, 6);
+    let myName = "プレイヤー1";
 
     let gameState = {
       mode: "local",
@@ -613,22 +599,6 @@
     const actionModal = document.getElementById("actionModal");
     const passTurnModal = document.getElementById("passTurnModal");
 
-    const PEER_PREFIX = "xeno-banana-v2-";
-
-    // 複数端末・異なるキャリア通信間をつなぐ強力なSTUN設定
-    const PEER_CONFIG = {
-      debug: 1,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun.cloudflare.com:3478' }
-        ]
-      }
-    };
-
-    // 通信ログ追加
     function appendNetLog(msg, type = "normal") {
       const consoleEl = document.getElementById("connectionConsole");
       const time = new Date().toTimeString().split(" ")[0];
@@ -642,24 +612,20 @@
     }
 
     window.addEventListener("DOMContentLoaded", () => {
-      // URLパラメータから合言葉を自動入力 (?room=1124)
       const urlParams = new URLSearchParams(window.location.search);
       const roomParam = urlParams.get('room');
       if (roomParam) {
         document.getElementById("customRoomIdInput").value = roomParam;
-        appendNetLog(`URLから合言葉「${roomParam}」を読み込みました。`, "ok");
+        appendNetLog(`合言葉「${roomParam}」をURLから設定しました。`, "ok");
       }
 
       document.getElementById("ruleBtn").onclick = () => ruleModal.classList.remove("hidden");
       document.getElementById("closeRuleBtn").onclick = () => ruleModal.classList.add("hidden");
 
-      // 招待URLコピー
       document.getElementById("copyInviteUrlBtn").onclick = () => {
         const id = document.getElementById("displayRoomId").innerText;
         const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${id}`;
-        navigator.clipboard.writeText(inviteUrl).then(() => {
-          alert("招待URLをコピーしました！このURLを対戦相手に送ってください。");
-        });
+        navigator.clipboard.writeText(inviteUrl).then(() => alert("招待URLをコピーしました！"));
       };
 
       document.getElementById("startLocalBtn").onclick = () => {
@@ -668,20 +634,18 @@
         startLocalGame(count);
       };
 
-      // 部屋作成
       document.getElementById("createRoomBtn").onclick = () => {
         const customId = document.getElementById("customRoomIdInput").value.trim();
         if (!customId) return alert("合言葉を入力してください");
         myName = document.getElementById("playerNameInput").value.trim() || "ホスト";
-        initPeer(true, customId);
+        connectMQTT(true, customId);
       };
 
-      // 部屋参加
       document.getElementById("joinRoomBtn").onclick = () => {
         const customId = document.getElementById("customRoomIdInput").value.trim();
         if (!customId) return alert("合言葉を入力してください");
         myName = document.getElementById("playerNameInput").value.trim() || "ゲスト";
-        initPeer(false, customId);
+        connectMQTT(false, customId);
       };
 
       document.getElementById("startGameBtn").onclick = () => {
@@ -695,136 +659,81 @@
       };
     });
 
-    /* ================= P2P 通信 (PeerJS) ================= */
-    function initPeer(asHost, userRoomId) {
-      if (peer) { peer.destroy(); }
+    /* ================= 超高速MQTT通信 ================= */
+    function connectMQTT(asHost, roomId) {
+      isOnline = true;
+      isHost = asHost;
+      roomTopic = "xeno/v2/room_" + roomId;
 
-      const targetPeerId = PEER_PREFIX + userRoomId;
-      appendNetLog("シグナリングサーバーにアクセス中...", "warn");
+      appendNetLog("高速通信サーバーに接続中...", "warn");
 
-      if (asHost) {
-        // ホスト
-        peer = new Peer(targetPeerId, PEER_CONFIG);
+      // EMQX 高速公開WebSocketブローカー (TLS暗号化)
+      mqttClient = mqtt.connect("wss://broker.emqx.io:8084/mqtt", {
+        clientId: myPlayerId,
+        clean: true,
+        connectTimeout: 5000
+      });
 
-        peer.on("open", (id) => {
-          myPlayerId = id;
-          isOnline = true;
-          isHost = true;
-          appendNetLog(`ホスト登録完了！合言葉: ${userRoomId}`, "ok");
-          
-          document.getElementById("displayRoomId").innerText = userRoomId;
-          document.getElementById("hostActionRow").classList.remove("hidden");
-          document.getElementById("guestWaitMsg").classList.add("hidden");
-
-          lobbyScreen.classList.add("hidden");
-          waitingScreen.classList.remove("hidden");
-
-          gameState.players = [{
-            id: myPlayerId,
-            name: myName,
-            hand: [],
-            discards: [],
-            isProtected: false,
-            hasKenja: false,
-            isEliminated: false
-          }];
-          updateMemberList();
-
-          peer.on("connection", (conn) => {
-            appendNetLog("相手からの接続要求を検知。接続確立中...", "warn");
-            conn.on("open", () => {
-              if (gameState.players.length >= 4 || gameState.phase !== "init") {
-                conn.send({ type: "ERROR", msg: "満室かゲーム進行中です" });
-                setTimeout(() => conn.close(), 500);
-                return;
-              }
-              connections.push(conn);
-              appendNetLog(`プレイヤーが参加しました (Peer: ${conn.peer.slice(-4)})`, "ok");
-              conn.on("data", (data) => handleNetworkMessage(data, conn));
-            });
-            conn.on("close", () => {
-              connections = connections.filter(c => c !== conn);
-              gameState.players = gameState.players.filter(p => p.id !== conn.peer);
-              updateMemberList();
-              broadcast({ type: "UPDATE_STATE", state: gameState });
-            });
-          });
-        });
-
-        peer.on("error", (err) => {
-          if (err.type === "unavailable-id") {
-            appendNetLog("エラー: その合言葉は使用中です。別の合言葉にするか参加してください。", "err");
-            alert("その合言葉の部屋は既に存在します。別の合言葉にするか、「部屋に参加する」を押してください。");
-          } else {
-            appendNetLog(`通信エラー: ${err}`, "err");
-          }
-        });
-
-      } else {
-        // ゲスト
-        peer = new Peer(PEER_CONFIG);
-
-        peer.on("open", (id) => {
-          myPlayerId = id;
-          isOnline = true;
-          isHost = false;
-          appendNetLog(`接続元ID生成完了。合言葉「${userRoomId}」のホストを検索中...`, "warn");
-
-          // 確実なJSON通信設定で接続
-          hostConn = peer.connect(targetPeerId, { reliable: true, serialization: 'json' });
-
-          hostConn.on("open", () => {
-            appendNetLog("ホストとP2P接続成功！待機ルームに入室します。", "ok");
-            document.getElementById("displayRoomId").innerText = userRoomId;
-            document.getElementById("hostActionRow").classList.add("hidden");
-            document.getElementById("guestWaitMsg").classList.remove("hidden");
-
+      mqttClient.on("connect", () => {
+        appendNetLog("サーバー接続成功！", "ok");
+        mqttClient.subscribe(roomTopic, (err) => {
+          if (!err) {
+            appendNetLog(`部屋「${roomId}」に接続しました。`, "ok");
+            document.getElementById("displayRoomId").innerText = roomId;
             lobbyScreen.classList.add("hidden");
             waitingScreen.classList.remove("hidden");
 
-            hostConn.send({ type: "JOIN", name: myName });
-          });
-
-          hostConn.on("data", (data) => handleNetworkMessage(data));
-          hostConn.on("close", () => {
-            appendNetLog("ホストとの通信が切断されました。", "err");
-            alert("ホストとの通信が切断されました。");
-          });
-          hostConn.on("error", (err) => appendNetLog(`接続エラー: ${err}`, "err"));
-        });
-
-        peer.on("error", (err) => {
-          if (err.type === "peer-unavailable") {
-            appendNetLog(`エラー: 合言葉「${userRoomId}」のホストが見つかりません。`, "err");
-            alert(`合言葉「${userRoomId}」の部屋が見つかりません。\nホスト側が「部屋を作る」を押して待機しているか確認してください。`);
-          } else {
-            appendNetLog(`通信エラー: ${err}`, "err");
+            if (isHost) {
+              document.getElementById("hostActionRow").classList.remove("hidden");
+              document.getElementById("guestWaitMsg").classList.add("hidden");
+              gameState.players = [{ id: myPlayerId, name: myName, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false }];
+              updateMemberList();
+            } else {
+              document.getElementById("hostActionRow").classList.add("hidden");
+              document.getElementById("guestWaitMsg").classList.remove("hidden");
+              // 参加通知を即送信
+              sendMsg({ type: "JOIN", id: myPlayerId, name: myName });
+            }
           }
         });
+      });
+
+      mqttClient.on("message", (topic, payload) => {
+        try {
+          const msg = JSON.parse(payload.toString());
+          handleNetworkMessage(msg);
+        } catch (e) {
+          console.error(e);
+        }
+      });
+
+      mqttClient.on("error", (err) => {
+        appendNetLog("通信エラー: " + err, "err");
+      });
+    }
+
+    function sendMsg(msg) {
+      if (mqttClient && mqttClient.connected) {
+        mqttClient.publish(roomTopic, JSON.stringify(msg));
       }
     }
 
-    function broadcast(msg) {
-      connections.forEach(conn => { if (conn && conn.open) conn.send(msg); });
-    }
-
-    function handleNetworkMessage(msg, senderConn = null) {
+    function handleNetworkMessage(msg) {
       if (msg.type === "JOIN" && isHost) {
-        gameState.players.push({
-          id: senderConn.peer,
-          name: msg.name,
-          hand: [],
-          discards: [],
-          isProtected: false,
-          hasKenja: false,
-          isEliminated: false
-        });
-        updateMemberList();
-        broadcast({ type: "UPDATE_STATE", state: gameState });
-        if (gameState.players.length >= 2) {
-          document.getElementById("startGameBtn").disabled = false;
+        if (!gameState.players.some(p => p.id === msg.id)) {
+          if (gameState.players.length >= 4) {
+            sendMsg({ type: "ERROR", targetId: msg.id, text: "満室です" });
+            return;
+          }
+          gameState.players.push({ id: msg.id, name: msg.name, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false });
+          appendNetLog(`${msg.name} が入室しました！`, "ok");
+          updateMemberList();
+          sendMsg({ type: "SYNC", state: gameState });
+          if (gameState.players.length >= 2) {
+            document.getElementById("startGameBtn").disabled = false;
+          }
         }
-      } else if (msg.type === "UPDATE_STATE") {
+      } else if (msg.type === "SYNC") {
         gameState = msg.state;
         updateMemberList();
         if (gameState.phase !== "init") {
@@ -834,8 +743,8 @@
         renderGame();
       } else if (msg.type === "ACTION" && isHost) {
         processCardPlay(msg.playerId, msg.cardRank, msg.targetId, msg.extra);
-      } else if (msg.type === "ERROR") {
-        alert(msg.msg);
+      } else if (msg.type === "ERROR" && msg.targetId === myPlayerId) {
+        alert(msg.text);
       }
     }
 
@@ -844,13 +753,13 @@
       list.innerHTML = "";
       gameState.players.forEach(p => {
         const li = document.createElement("li");
-        li.innerHTML = `<span>${p.name}</span> <span style="color:var(--gold-mid); font-size:12px;">${p.id === myPlayerId ? "(あなた)" : ""}</span>`;
+        li.innerHTML = `<span>${p.name}</span> <span style="color:var(--gold); font-size:12px;">${p.id === myPlayerId ? "(あなた)" : ""}</span>`;
         list.appendChild(li);
       });
       document.getElementById("playerCount").innerText = gameState.players.length;
     }
 
-    /* ================= ローカル戦 ================= */
+    /* ================= ローカル対面 ================= */
     function startLocalGame(count) {
       isOnline = false;
       isHost = true;
@@ -869,7 +778,7 @@
       initNewDeckAndDeal();
     }
 
-    /* ================= ゲーム進行ロジック ================= */
+    /* ================= ゲームロジック ================= */
     function initNewDeckAndDeal() {
       let deck = [];
       for (let rank = 1; rank <= 10; rank++) {
@@ -898,7 +807,7 @@
       if (isOnline) {
         waitingScreen.classList.add("hidden");
         gameScreen.classList.remove("hidden");
-        broadcast({ type: "UPDATE_STATE", state: gameState });
+        sendMsg({ type: "SYNC", state: gameState });
       }
       startTurn();
     }
@@ -980,7 +889,7 @@
 
     function applyCard(playerId, cardRank, targetId, extra) {
       if (isOnline && !isHost) {
-        hostConn.send({ type: "ACTION", playerId, cardRank, targetId, extra });
+        sendMsg({ type: "ACTION", playerId, cardRank, targetId, extra });
       } else {
         processCardPlay(playerId, cardRank, targetId, extra);
       }
@@ -1175,7 +1084,7 @@
     }
 
     function syncAndRender() {
-      if (isOnline && isHost) broadcast({ type: "UPDATE_STATE", state: gameState });
+      if (isOnline && isHost) sendMsg({ type: "SYNC", state: gameState });
       renderGame();
     }
 
