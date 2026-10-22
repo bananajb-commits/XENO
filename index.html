@@ -2,189 +2,278 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>XENO - オンラインカードゲーム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>XENO - 心理と直感のカードバトル</title>
+  
+  <!-- 高級ダークファンタジーフォント (Cinzel × しっぽり明朝) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Shippori+Mincho:wght@500;700;800&display=swap" rel="stylesheet">
+
   <!-- PeerJS -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
   <style>
+    :root {
+      --gold-light: #fbe285;
+      --gold-mid: #d4af37;
+      --gold-dark: #8c6d1f;
+      --bg-dark: #07090c;
+      --panel-bg: rgba(14, 17, 23, 0.94);
+      --border-gold: rgba(212, 175, 55, 0.45);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    
     body {
-      font-family: "Cinzel", "Yu Mincho", "Hiragino Mincho ProN", serif;
-      background-color: #0b0d10;
+      font-family: 'Shippori Mincho', 'Cinzel', serif;
+      background-color: var(--bg-dark);
       color: #eae6db;
       min-height: 100vh;
       overflow-x: hidden;
+      letter-spacing: 0.05em;
     }
+
+    /* ヘッダー */
     .header {
-      height: 50px;
-      background: rgba(10, 10, 15, 0.95);
-      border-bottom: 1px solid #7c683b;
+      height: 54px;
+      background: linear-gradient(180deg, rgba(20,24,32,0.98) 0%, rgba(10,12,16,0.95) 100%);
+      border-bottom: 1px solid var(--border-gold);
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.8);
     }
     .logo {
-      font-size: 22px;
-      font-weight: bold;
-      letter-spacing: 4px;
-      color: #d4af37;
-      text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 6px;
+      background: linear-gradient(135deg, #fff2be 0%, var(--gold-mid) 50%, var(--gold-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 10px rgba(212,175,55,0.4));
     }
+
+    /* ボタンスタイル */
     .btn {
-      padding: 8px 16px;
-      font-size: 14px;
-      font-weight: bold;
+      font-family: 'Shippori Mincho', serif;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 700;
       border-radius: 4px;
       cursor: pointer;
       border: 1px solid transparent;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      letter-spacing: 0.08em;
     }
     .btn-gold {
-      background: linear-gradient(135deg, #d4af37, #856d1c);
-      color: #000;
-      border-color: #ffd700;
+      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-mid) 50%, var(--gold-dark) 100%);
+      color: #0d0e12;
+      border-color: #ffe68a;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
     }
-    .btn-gold:hover:not(:disabled) { filter: brightness(1.2); }
-    .btn-primary { background: #2a4365; color: #fff; border-color: #4299e1; }
-    .btn-secondary { background: #2d3748; color: #e2e8f0; border-color: #4a5568; }
-    .btn-danger { background: #742a2a; color: #fff; }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-gold:hover:not(:disabled) {
+      filter: brightness(1.2);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(212, 175, 55, 0.45);
+    }
+    .btn-primary { background: #1a365d; color: #e2e8f0; border-color: #3182ce; }
+    .btn-primary:hover:not(:disabled) { background: #2b4c7e; transform: translateY(-1px); }
+    .btn-secondary { background: #1e2530; color: #cbd5e0; border-color: #3f4e65; }
+    .btn-secondary:hover:not(:disabled) { background: #2c3647; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
+    /* 画面切り替え */
     .screen {
-      min-height: calc(100vh - 50px);
+      min-height: calc(100vh - 54px);
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 15px;
     }
     .hidden { display: none !important; }
 
+    /* ロビーパネル */
     .lobby-card {
-      background: rgba(20, 22, 28, 0.95);
-      border: 1px solid #7c683b;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 15px rgba(212, 175, 55, 0.2);
-      border-radius: 8px;
-      padding: 25px 30px;
-      max-width: 480px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border-gold);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.9), 0 0 25px rgba(212, 175, 55, 0.15);
+      border-radius: 10px;
+      padding: 30px;
+      max-width: 490px;
       width: 100%;
+      position: relative;
     }
-    .title { text-align: center; color: #d4af37; font-size: 24px; letter-spacing: 2px; }
-    .subtitle { text-align: center; color: #a0aec0; font-size: 13px; margin-bottom: 20px; }
-    .input-group { margin-bottom: 15px; }
-    .input-group label { display: block; font-size: 13px; color: #cbd5e0; margin-bottom: 5px; }
+    .title {
+      font-family: 'Cinzel', serif;
+      text-align: center;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      background: linear-gradient(135deg, #fff 0%, var(--gold-mid) 60%, var(--gold-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { text-align: center; color: #8e9bb0; font-size: 13px; margin-bottom: 22px; }
+
+    .input-group { margin-bottom: 16px; }
+    .input-group label {
+      display: block;
+      font-size: 13px;
+      color: #cbd5e0;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
     input[type="text"], select {
       width: 100%;
-      padding: 10px;
-      background: #0f1217;
-      border: 1px solid #4a5568;
-      border-radius: 4px;
+      padding: 11px 14px;
+      background: #090c10;
+      border: 1px solid #374254;
+      border-radius: 5px;
       color: #fff;
       font-size: 15px;
+      font-family: 'Shippori Mincho', serif;
+      transition: border-color 0.2s;
     }
-    .btn-row { display: flex; gap: 10px; margin: 10px 0; }
+    input[type="text"]:focus, select:focus {
+      outline: none;
+      border-color: var(--gold-mid);
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+    }
+    .btn-row { display: flex; gap: 10px; margin: 15px 0 10px; }
     .btn-row .btn { flex: 1; }
-    .divider { border: 0; border-top: 1px dashed #4a5568; margin: 18px 0; }
-    .room-id-box {
-      background: #0f1217;
+    .divider { border: 0; border-top: 1px dashed rgba(212, 175, 55, 0.2); margin: 20px 0; }
+
+    /* 通信デバッグログ窓 */
+    .connection-console {
+      background: #050608;
+      border: 1px solid #232a36;
+      border-radius: 6px;
       padding: 10px;
-      border: 1px solid #d4af37;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin: 12px 0;
+      margin-top: 15px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #718096;
+      max-height: 80px;
+      overflow-y: auto;
+      line-height: 1.5;
     }
-    .member-list { list-style: none; margin: 12px 0; }
+    .connection-console .log-ok { color: #48bb78; }
+    .connection-console .log-warn { color: var(--gold-mid); }
+    .connection-console .log-err { color: #f56565; }
+
+    /* 待機ルーム */
+    .room-id-box {
+      background: #090c10;
+      padding: 14px;
+      border: 1px solid var(--border-gold);
+      border-radius: 6px;
+      margin: 15px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .member-list { list-style: none; margin: 15px 0; }
     .member-list li {
-      padding: 8px 12px;
-      background: #1a202c;
-      margin-bottom: 6px;
-      border-radius: 4px;
-      border-left: 3px solid #d4af37;
+      padding: 10px 14px;
+      background: #151b24;
+      margin-bottom: 8px;
+      border-radius: 5px;
+      border-left: 3px solid var(--gold-mid);
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
     }
 
     /* プレイマット (直下の mat.jpg を使用) */
     .playmat {
       width: 100vw;
-      height: calc(100vh - 50px);
-      background-color: #0b0d10;
+      height: calc(100vh - 54px);
+      background-color: #07090c;
       background-image: url('mat.jpg');
       background-size: cover;
       background-position: center;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 15px;
+      padding: 12px;
       overflow: hidden;
       position: relative;
     }
+
+    /* 対戦相手エリア（上部配置） */
     .opponents-container {
       display: flex;
       justify-content: space-around;
-      min-height: 145px;
+      min-height: 140px;
       gap: 10px;
     }
     .opponent-box {
-      background: rgba(15, 17, 23, 0.88);
-      border: 1px solid #4a5568;
+      background: rgba(14, 17, 23, 0.9);
+      border: 1px solid #333f52;
       border-radius: 6px;
-      padding: 8px;
-      min-width: 150px;
+      padding: 8px 12px;
+      min-width: 140px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
       transition: all 0.3s;
     }
     .opponent-box.active-turn {
-      border-color: #ffd700;
-      box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+      border-color: var(--gold-mid);
+      box-shadow: 0 0 16px rgba(212, 175, 55, 0.6);
+      transform: scale(1.03);
     }
-    .opponent-box.eliminated { opacity: 0.35; filter: grayscale(1); }
-    .opp-name { font-size: 13px; font-weight: bold; color: #cbd5e0; margin-bottom: 5px; }
-    .opp-cards { display: flex; gap: 5px; margin-bottom: 6px; }
-    .opp-discard { display: flex; gap: 4px; overflow-x: auto; max-width: 180px; }
+    .opponent-box.eliminated { opacity: 0.3; filter: grayscale(1); }
+    .opp-name { font-size: 13px; font-weight: 700; color: #cbd5e0; margin-bottom: 6px; }
+    .opp-cards { display: flex; gap: 6px; margin-bottom: 6px; }
+    .opp-discard { display: flex; gap: 4px; overflow-x: auto; max-width: 170px; }
 
-    /* 中央エリア */
+    /* 中央テーブル（山札・転生札・アナウンスログ） */
     .center-table {
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 30px;
+      margin: 10px 0;
     }
     .deck-zone { display: flex; align-items: center; gap: 20px; }
     .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .zone-label { font-size: 11px; color: #a0aec0; letter-spacing: 1px; }
 
-    /* カードデザイン (直下の No1.jpg〜No10.jpg, card_back.jpg を使用) */
+    /* カード本体 (直下の No1.jpg〜No10.jpg, card_back.jpg を使用) */
     .card {
-      width: 84px;
-      height: 126px;
+      width: 86px;
+      height: 128px;
       border-radius: 6px;
       position: relative;
       background-size: cover;
       background-position: center;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
-      border: 1px solid #d4af37;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.8);
+      border: 1px solid var(--border-gold);
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      background-color: #1a1a24;
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
+      background-color: #12151c;
     }
     .card:hover {
-      transform: translateY(-8px) scale(1.04);
-      box-shadow: 0 8px 16px rgba(212, 175, 55, 0.6);
+      transform: translateY(-10px) scale(1.05);
+      box-shadow: 0 10px 22px rgba(212, 175, 55, 0.55);
     }
     .card.disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
     .card-mini {
       width: 44px;
       height: 65px;
       border-radius: 3px;
-      border: 1px solid #7c683b;
+      border: 1px solid #5a4b26;
       background-size: cover;
       background-position: center;
-      position: relative;
-      background-color: #15171f;
+      background-color: #12151c;
       flex-shrink: 0;
+      position: relative;
     }
     .card-back {
       background-image: url('card_back.jpg');
@@ -192,136 +281,152 @@
       background-size: cover;
     }
     .deck-card {
-      width: 84px;
-      height: 126px;
+      width: 86px;
+      height: 128px;
       border-radius: 6px;
       background-image: url('card_back.jpg');
       background-size: cover;
-      border: 1px solid #d4af37;
+      border: 1px solid var(--gold-mid);
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
     }
     .deck-count {
-      background: rgba(0, 0, 0, 0.85);
-      border: 1px solid #d4af37;
-      color: #ffd700;
+      background: rgba(0, 0, 0, 0.88);
+      border: 1px solid var(--gold-mid);
+      color: var(--gold-light);
+      font-family: 'Cinzel', serif;
       font-size: 16px;
-      font-weight: bold;
-      padding: 2px 8px;
-      border-radius: 10px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 12px;
     }
     .reborn-card {
-      width: 84px;
-      height: 126px;
+      width: 86px;
+      height: 128px;
       border-radius: 6px;
       background-image: url('card_back.jpg');
       background-size: cover;
-      border: 1px dashed #ffd700;
+      border: 1px dashed var(--gold-mid);
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .horizontal { transform: rotate(90deg); margin: 15px 0; }
     .reborn-text {
-      background: rgba(0, 0, 0, 0.8);
-      padding: 2px 6px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 2px 7px;
       font-size: 11px;
-      color: #ffd700;
+      color: var(--gold-light);
       border-radius: 4px;
+      font-weight: 700;
     }
 
+    /* ゲーム内アナウンスログ */
     .game-log-box {
-      width: 300px;
+      width: 320px;
       height: 110px;
-      background: rgba(10, 12, 16, 0.9);
-      border: 1px solid #4a5568;
+      background: rgba(8, 10, 14, 0.92);
+      border: 1px solid #333f52;
       border-radius: 6px;
-      padding: 8px;
+      padding: 10px;
       overflow-y: auto;
       font-size: 12px;
       display: flex;
       flex-direction: column-reverse;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
     }
-    .log-entry { margin-bottom: 4px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .log-entry { margin-bottom: 5px; line-height: 1.45; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .log-highlight { color: var(--gold-light); font-weight: 700; }
 
+    /* 自分のエリア */
     .my-area {
-      background: rgba(15, 17, 23, 0.92);
-      border: 1px solid #7c683b;
+      background: rgba(14, 17, 23, 0.94);
+      border: 1px solid var(--border-gold);
       border-radius: 8px;
-      padding: 10px 16px;
+      padding: 10px 18px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      box-shadow: 0 -4px 15px rgba(0,0,0,0.6);
     }
     .player-info-bar {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       margin-bottom: 6px;
       width: 100%;
     }
-    .player-name { font-size: 15px; font-weight: bold; color: #ffd700; }
-    .player-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #2d3748; }
+    .player-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--gold-light);
+    }
+    .player-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #232c3d; }
     .guard-badge { background: #2b6cb0; color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+    
     .discard-line {
       display: flex;
       gap: 6px;
       overflow-x: auto;
       max-width: 95%;
-      min-height: 68px;
+      min-height: 70px;
       margin-bottom: 8px;
       padding: 2px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-    .hand-container { display: flex; gap: 15px; justify-content: center; }
+    .hand-container { display: flex; gap: 16px; justify-content: center; }
 
     .card-badge {
       position: absolute;
       top: 3px;
       left: 3px;
-      background: rgba(0,0,0,0.75);
-      border: 1px solid #d4af37;
-      color: #ffd700;
-      font-weight: bold;
+      background: rgba(0,0,0,0.8);
+      border: 1px solid var(--gold-mid);
+      color: var(--gold-light);
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
       font-size: 12px;
-      padding: 1px 5px;
+      padding: 1px 6px;
       border-radius: 3px;
     }
     .card-mini .card-badge { font-size: 9px; padding: 0 3px; }
 
+    /* モーダル */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.88);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 999;
+      backdrop-filter: blur(4px);
     }
     .modal-content {
-      background: #171923;
-      border: 1px solid #d4af37;
-      box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+      background: #11151e;
+      border: 1px solid var(--border-gold);
+      box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
       border-radius: 8px;
-      padding: 20px;
-      max-width: 500px;
-      width: 90%;
+      padding: 24px;
+      max-width: 520px;
+      width: 92%;
     }
-    .modal-body { margin: 15px 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .modal-body { margin: 16px 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
-    .rule-scroll { max-height: 60vh; overflow-y: auto; font-size: 13px; line-height: 1.6; padding-right: 8px; }
-    .rule-scroll section { margin-bottom: 15px; }
-    .rule-scroll h3 { color: #d4af37; margin-bottom: 4px; }
-    .card-rule-item { background: rgba(255,255,255,0.03); padding: 5px 8px; margin-bottom: 4px; border-left: 2px solid #d4af37; }
+    .rule-scroll { max-height: 60vh; overflow-y: auto; font-size: 13px; line-height: 1.65; padding-right: 8px; }
+    .rule-scroll section { margin-bottom: 16px; }
+    .rule-scroll h3 { color: var(--gold-light); margin-bottom: 5px; }
+    .card-rule-item { background: rgba(255,255,255,0.04); padding: 6px 10px; margin-bottom: 5px; border-left: 2px solid var(--gold-mid); }
   </style>
 </head>
 <body>
   <div id="app">
     <header class="header">
-      <div class="logo">XENO</div>
+      <div class="logo">XENO <span style="font-size:12px; font-family:'Shippori Mincho'; color:#8e9bb0;">-ONLINE-</span></div>
       <div>
-        <button id="ruleBtn" class="btn btn-secondary">📜 ルール説明</button>
+        <button id="ruleBtn" class="btn btn-secondary">📜 ルール解説</button>
       </div>
     </header>
 
@@ -329,16 +434,16 @@
     <div id="lobbyScreen" class="screen">
       <div class="lobby-card">
         <h1 class="title">XENO MULTIPLAYER</h1>
-        <p class="subtitle">心理と直感のカードバトル (2〜4人)</p>
+        <p class="subtitle">運命を欺き、真実を見抜け (最大4人)</p>
 
         <div class="input-group">
-          <label>あなたのプレイヤー名</label>
+          <label>プレイヤー名</label>
           <input type="text" id="playerNameInput" maxlength="10" value="プレイヤー1">
         </div>
 
         <div class="input-group">
-          <label>ルームID（好きな合言葉を決めてください）</label>
-          <input type="text" id="customRoomIdInput" placeholder="例: room1, xeno777 など" value="room1">
+          <label>合言葉（ルームID）</label>
+          <input type="text" id="customRoomIdInput" placeholder="例: 1124, battle777" value="1124">
         </div>
 
         <div>
@@ -349,38 +454,44 @@
 
           <hr class="divider">
 
-          <h3 style="color:#d4af37; font-size:13px; margin-bottom:8px;">◆ 1台の端末で対面プレイ</h3>
+          <h3 style="color:var(--gold-mid); font-size:13px; margin-bottom:8px; font-weight:700;">◆ 1台の端末で対面プレイ</h3>
           <div style="display:flex; gap:10px;">
             <select id="localPlayerCount">
               <option value="2">2人対戦</option>
               <option value="3">3人対戦</option>
               <option value="4">4人対戦</option>
             </select>
-            <button id="startLocalBtn" class="btn btn-secondary">ローカル対戦</button>
+            <button id="startLocalBtn" class="btn btn-secondary">対戦開始</button>
           </div>
         </div>
 
-        <div id="lobbyStatus" style="color:#ffd700; font-size:13px; margin-top:12px; text-align:center;"></div>
+        <!-- リアルタイム通信進行ログ -->
+        <div class="connection-console" id="connectionConsole">
+          <div>[システム] 待機中。部屋を作るか参加してください。</div>
+        </div>
       </div>
     </div>
 
     <!-- 待機ルーム画面 -->
     <div id="waitingScreen" class="screen hidden">
       <div class="lobby-card">
-        <h2 style="color:#d4af37;">対戦待機ルーム</h2>
+        <h2 style="color:var(--gold-light); font-size:20px; font-weight:800;">対戦待機ルーム</h2>
+        
         <div class="room-id-box">
-          <span>合言葉（ルームID）: </span>
-          <strong id="displayRoomId" style="color:#ffd700; font-size:16px;">------</strong>
+          <div>
+            <div style="font-size:11px; color:#8e9bb0;">合言葉（ルームID）</div>
+            <strong id="displayRoomId" style="color:var(--gold-light); font-family:'Cinzel'; font-size:20px;">------</strong>
+          </div>
+          <button id="copyInviteUrlBtn" class="btn btn-secondary" style="font-size:12px; padding:6px 12px;">🔗 招待URLをコピー</button>
         </div>
-        <p style="font-size:12px; color:#a0aec0;">対戦相手に同じ合言葉を入力してもらってください。</p>
 
-        <h3 style="margin-top:15px; font-size:14px;">参加者 (<span id="playerCount">1</span>/4)</h3>
+        <h3 style="margin-top:15px; font-size:14px; font-weight:700;">参加者一覧 (<span id="playerCount">1</span>/4)</h3>
         <ul id="memberList" class="member-list"></ul>
 
         <div class="btn-row" id="hostActionRow">
           <button id="startGameBtn" class="btn btn-gold" disabled>ゲームを開始する (2人以上)</button>
         </div>
-        <div id="guestWaitMsg" class="hidden" style="text-align:center; color:#a0aec0; font-size:13px; margin-top:10px;">
+        <div id="guestWaitMsg" class="hidden" style="text-align:center; color:#8e9bb0; font-size:13px; margin-top:12px;">
           ホストがゲームを開始するのをお待ちください...
         </div>
       </div>
@@ -413,7 +524,7 @@
           <div class="player-info-bar">
             <span class="player-name" id="myPlayerName">自分</span>
             <span class="player-badge" id="myStatusBadge">待機中</span>
-            <span class="guard-badge hidden" id="myGuardBadge">🛡️ 守護</span>
+            <span class="guard-badge hidden" id="myGuardBadge">🛡️ 乙女の守護</span>
           </div>
           <div class="discard-line" id="myDiscardLine"></div>
           <div class="hand-container" id="myHand"></div>
@@ -424,7 +535,7 @@
     <!-- モーダル各種 -->
     <div id="actionModal" class="modal-overlay hidden">
       <div class="modal-content">
-        <h3 id="modalTitle" style="color:#ffd700;">アクション</h3>
+        <h3 id="modalTitle" style="color:var(--gold-light);">アクション</h3>
         <p id="modalDesc" style="font-size:13px; color:#cbd5e0; margin-top:4px;">対象を選択してください</p>
         <div id="modalBody" class="modal-body"></div>
         <div class="modal-actions" id="modalActions"></div>
@@ -433,7 +544,7 @@
 
     <div id="passTurnModal" class="modal-overlay hidden">
       <div class="modal-content" style="text-align:center;">
-        <h2 id="passTurnPlayerName" style="color:#ffd700;">プレイヤー交代</h2>
+        <h2 id="passTurnPlayerName" style="color:var(--gold-light);">プレイヤー交代</h2>
         <p style="margin:12px 0; font-size:13px;">画面を相手に見せないように端末を渡してください。</p>
         <button id="passTurnReadyBtn" class="btn btn-gold">準備完了（手札を見る）</button>
       </div>
@@ -441,7 +552,7 @@
 
     <div id="ruleModal" class="modal-overlay hidden">
       <div class="modal-content" style="max-width:650px;">
-        <h2 style="color:#d4af37; margin-bottom:10px;">XENO 公式ルール解説</h2>
+        <h2 style="color:var(--gold-mid); margin-bottom:10px;">XENO 公式ルール解説</h2>
         <div class="rule-scroll">
           <section>
             <h3>■ 概要と勝利条件</h3>
@@ -502,21 +613,54 @@
     const actionModal = document.getElementById("actionModal");
     const passTurnModal = document.getElementById("passTurnModal");
 
-    const PEER_PREFIX = "xeno-banana-v1-"; // 世界中の重複を防ぐ接頭辞
+    const PEER_PREFIX = "xeno-banana-v2-";
 
-    // Googleの公開STUNサーバー（接続を安定させる）
+    // 複数端末・異なるキャリア通信間をつなぐ強力なSTUN設定
     const PEER_CONFIG = {
+      debug: 1,
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' }
         ]
       }
     };
 
+    // 通信ログ追加
+    function appendNetLog(msg, type = "normal") {
+      const consoleEl = document.getElementById("connectionConsole");
+      const time = new Date().toTimeString().split(" ")[0];
+      const div = document.createElement("div");
+      if (type === "ok") div.className = "log-ok";
+      if (type === "warn") div.className = "log-warn";
+      if (type === "err") div.className = "log-err";
+      div.innerText = `[${time}] ${msg}`;
+      consoleEl.appendChild(div);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
     window.addEventListener("DOMContentLoaded", () => {
+      // URLパラメータから合言葉を自動入力 (?room=1124)
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomParam = urlParams.get('room');
+      if (roomParam) {
+        document.getElementById("customRoomIdInput").value = roomParam;
+        appendNetLog(`URLから合言葉「${roomParam}」を読み込みました。`, "ok");
+      }
+
       document.getElementById("ruleBtn").onclick = () => ruleModal.classList.remove("hidden");
       document.getElementById("closeRuleBtn").onclick = () => ruleModal.classList.add("hidden");
+
+      // 招待URLコピー
+      document.getElementById("copyInviteUrlBtn").onclick = () => {
+        const id = document.getElementById("displayRoomId").innerText;
+        const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${id}`;
+        navigator.clipboard.writeText(inviteUrl).then(() => {
+          alert("招待URLをコピーしました！このURLを対戦相手に送ってください。");
+        });
+      };
 
       document.getElementById("startLocalBtn").onclick = () => {
         const count = parseInt(document.getElementById("localPlayerCount").value, 10);
@@ -524,18 +668,18 @@
         startLocalGame(count);
       };
 
-      // 部屋を作る
+      // 部屋作成
       document.getElementById("createRoomBtn").onclick = () => {
         const customId = document.getElementById("customRoomIdInput").value.trim();
-        if (!customId) return alert("ルームIDを入力してください");
+        if (!customId) return alert("合言葉を入力してください");
         myName = document.getElementById("playerNameInput").value.trim() || "ホスト";
         initPeer(true, customId);
       };
 
-      // 部屋に参加する
+      // 部屋参加
       document.getElementById("joinRoomBtn").onclick = () => {
         const customId = document.getElementById("customRoomIdInput").value.trim();
-        if (!customId) return alert("参加するルームIDを入力してください");
+        if (!customId) return alert("合言葉を入力してください");
         myName = document.getElementById("playerNameInput").value.trim() || "ゲスト";
         initPeer(false, customId);
       };
@@ -553,19 +697,21 @@
 
     /* ================= P2P 通信 (PeerJS) ================= */
     function initPeer(asHost, userRoomId) {
-      const statusEl = document.getElementById("lobbyStatus");
-      statusEl.innerText = "接続サーバーと通信中...";
+      if (peer) { peer.destroy(); }
 
       const targetPeerId = PEER_PREFIX + userRoomId;
+      appendNetLog("シグナリングサーバーにアクセス中...", "warn");
 
       if (asHost) {
-        // ホスト：ユーザーが入力したIDで作成
+        // ホスト
         peer = new Peer(targetPeerId, PEER_CONFIG);
 
         peer.on("open", (id) => {
           myPlayerId = id;
           isOnline = true;
           isHost = true;
+          appendNetLog(`ホスト登録完了！合言葉: ${userRoomId}`, "ok");
+          
           document.getElementById("displayRoomId").innerText = userRoomId;
           document.getElementById("hostActionRow").classList.remove("hidden");
           document.getElementById("guestWaitMsg").classList.add("hidden");
@@ -585,13 +731,15 @@
           updateMemberList();
 
           peer.on("connection", (conn) => {
+            appendNetLog("相手からの接続要求を検知。接続確立中...", "warn");
             conn.on("open", () => {
               if (gameState.players.length >= 4 || gameState.phase !== "init") {
-                conn.send({ type: "ERROR", msg: "満室か進行中です" });
+                conn.send({ type: "ERROR", msg: "満室かゲーム進行中です" });
                 setTimeout(() => conn.close(), 500);
                 return;
               }
               connections.push(conn);
+              appendNetLog(`プレイヤーが参加しました (Peer: ${conn.peer.slice(-4)})`, "ok");
               conn.on("data", (data) => handleNetworkMessage(data, conn));
             });
             conn.on("close", () => {
@@ -605,50 +753,53 @@
 
         peer.on("error", (err) => {
           if (err.type === "unavailable-id") {
-            alert("そのルームIDは既に使用されています。別のIDを指定するか、既にある部屋に参加してください。");
+            appendNetLog("エラー: その合言葉は使用中です。別の合言葉にするか参加してください。", "err");
+            alert("その合言葉の部屋は既に存在します。別の合言葉にするか、「部屋に参加する」を押してください。");
           } else {
-            alert("エラー: " + err);
+            appendNetLog(`通信エラー: ${err}`, "err");
           }
-          statusEl.innerText = "";
         });
 
       } else {
-        // ゲスト：ランダムIDで開始し、ホストへ接続
+        // ゲスト
         peer = new Peer(PEER_CONFIG);
 
         peer.on("open", (id) => {
           myPlayerId = id;
           isOnline = true;
           isHost = false;
+          appendNetLog(`接続元ID生成完了。合言葉「${userRoomId}」のホストを検索中...`, "warn");
 
-          statusEl.innerText = "ホストを検索中...";
-          hostConn = peer.connect(targetPeerId, { reliable: true });
+          // 確実なJSON通信設定で接続
+          hostConn = peer.connect(targetPeerId, { reliable: true, serialization: 'json' });
 
           hostConn.on("open", () => {
-            statusEl.innerText = "";
+            appendNetLog("ホストとP2P接続成功！待機ルームに入室します。", "ok");
             document.getElementById("displayRoomId").innerText = userRoomId;
             document.getElementById("hostActionRow").classList.add("hidden");
             document.getElementById("guestWaitMsg").classList.remove("hidden");
 
-            // 待機画面へ切り替え！
             lobbyScreen.classList.add("hidden");
             waitingScreen.classList.remove("hidden");
 
-            // ホストへ参加通知
             hostConn.send({ type: "JOIN", name: myName });
           });
 
           hostConn.on("data", (data) => handleNetworkMessage(data));
-          hostConn.on("close", () => alert("ホストとの接続が切断されました"));
+          hostConn.on("close", () => {
+            appendNetLog("ホストとの通信が切断されました。", "err");
+            alert("ホストとの通信が切断されました。");
+          });
+          hostConn.on("error", (err) => appendNetLog(`接続エラー: ${err}`, "err"));
         });
 
         peer.on("error", (err) => {
           if (err.type === "peer-unavailable") {
-            alert("指定したルームIDのホストが見つかりません。部屋が作成されているか確認してください。");
+            appendNetLog(`エラー: 合言葉「${userRoomId}」のホストが見つかりません。`, "err");
+            alert(`合言葉「${userRoomId}」の部屋が見つかりません。\nホスト側が「部屋を作る」を押して待機しているか確認してください。`);
           } else {
-            alert("接続エラー: " + err);
+            appendNetLog(`通信エラー: ${err}`, "err");
           }
-          statusEl.innerText = "";
         });
       }
     }
@@ -693,7 +844,7 @@
       list.innerHTML = "";
       gameState.players.forEach(p => {
         const li = document.createElement("li");
-        li.innerText = `${p.name} ${p.id === myPlayerId ? "(あなた)" : ""}`;
+        li.innerHTML = `<span>${p.name}</span> <span style="color:var(--gold-mid); font-size:12px;">${p.id === myPlayerId ? "(あなた)" : ""}</span>`;
         list.appendChild(li);
       });
       document.getElementById("playerCount").innerText = gameState.players.length;
