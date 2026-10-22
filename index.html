@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XENO - オンラインカードゲーム</title>
+  <!-- PeerJS (P2P通信) -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      font-family: "Cinzel", "Yu Mincho", "Hiragino Mincho ProN", serif;
+      background-color: #0b0d10;
+      color: #eae6db;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .header {
+      height: 50px;
+      background: rgba(10, 10, 15, 0.95);
+      border-bottom: 1px solid #7c683b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 4px;
+      color: #d4af37;
+      text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+    }
+    .btn {
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #d4af37, #856d1c);
+      color: #000;
+      border-color: #ffd700;
+    }
+    .btn-gold:hover:not(:disabled) { filter: brightness(1.2); }
+    .btn-primary { background: #2a4365; color: #fff; border-color: #4299e1; }
+    .btn-secondary { background: #2d3748; color: #e2e8f0; border-color: #4a5568; }
+    .btn-danger { background: #742a2a; color: #fff; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .screen {
+      min-height: calc(100vh - 50px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .hidden { display: none !important; }
+
+    .lobby-card {
+      background: rgba(20, 22, 28, 0.95);
+      border: 1px solid #7c683b;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 15px rgba(212, 175, 55, 0.2);
+      border-radius: 8px;
+      padding: 30px;
+      max-width: 480px;
+      width: 100%;
+    }
+    .title { text-align: center; color: #d4af37; font-size: 26px; letter-spacing: 2px; }
+    .subtitle { text-align: center; color: #a0aec0; font-size: 13px; margin-bottom: 25px; }
+    .input-group { margin-bottom: 15px; }
+    .input-group label { display: block; font-size: 13px; color: #cbd5e0; margin-bottom: 6px; }
+    input[type="text"], select {
+      width: 100%;
+      padding: 10px;
+      background: #0f1217;
+      border: 1px solid #4a5568;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 15px;
+    }
+    .btn-row { display: flex; gap: 10px; margin: 12px 0; }
+    .btn-row .btn { flex: 1; }
+    .join-row, .local-row { display: flex; gap: 10px; margin-top: 10px; }
+    .divider { border: 0; border-top: 1px dashed #4a5568; margin: 20px 0; }
+    .room-id-box {
+      background: #0f1217;
+      padding: 10px;
+      border: 1px solid #d4af37;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 15px 0;
+    }
+    .member-list { list-style: none; margin: 15px 0; }
+    .member-list li {
+      padding: 8px 12px;
+      background: #1a202c;
+      margin-bottom: 6px;
+      border-radius: 4px;
+      border-left: 3px solid #d4af37;
+    }
+
+    /* プレイマット (直下の mat.jpg を使用) */
+    .playmat {
+      width: 100vw;
+      height: calc(100vh - 50px);
+      background-color: #0b0d10;
+      background-image: url('mat.jpg');
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 15px;
+      overflow: hidden;
+      position: relative;
+    }
+    .opponents-container {
+      display: flex;
+      justify-content: space-around;
+      min-height: 150px;
+      gap: 10px;
+    }
+    .opponent-box {
+      background: rgba(15, 17, 23, 0.88);
+      border: 1px solid #4a5568;
+      border-radius: 6px;
+      padding: 8px;
+      min-width: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: all 0.3s;
+    }
+    .opponent-box.active-turn {
+      border-color: #ffd700;
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+    }
+    .opponent-box.eliminated { opacity: 0.35; filter: grayscale(1); }
+    .opp-name { font-size: 13px; font-weight: bold; color: #cbd5e0; margin-bottom: 5px; }
+    .opp-cards { display: flex; gap: 5px; margin-bottom: 6px; }
+    .opp-discard { display: flex; gap: 4px; overflow-x: auto; max-width: 180px; }
+
+    /* 中央エリア */
+    .center-table {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 35px;
+    }
+    .deck-zone { display: flex; align-items: center; gap: 20px; }
+    .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .zone-label { font-size: 11px; color: #a0aec0; letter-spacing: 1px; }
+
+    /* カードデザイン (直下の No1.jpg〜No10.jpg, card_back.jpg を使用) */
+    .card {
+      width: 86px;
+      height: 128px;
+      border-radius: 6px;
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+      border: 1px solid #d4af37;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      background-color: #1a1a24;
+    }
+    .card:hover {
+      transform: translateY(-8px) scale(1.04);
+      box-shadow: 0 8px 16px rgba(212, 175, 55, 0.6);
+    }
+    .card.disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+    .card-mini {
+      width: 44px;
+      height: 65px;
+      border-radius: 3px;
+      border: 1px solid #7c683b;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      background-color: #15171f;
+      flex-shrink: 0;
+    }
+    .card-back {
+      background-image: url('card_back.jpg');
+      background-color: #fff;
+      background-size: cover;
+    }
+    .deck-card {
+      width: 86px;
+      height: 128px;
+      border-radius: 6px;
+      background-image: url('card_back.jpg');
+      background-size: cover;
+      border: 1px solid #d4af37;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .deck-count {
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid #d4af37;
+      color: #ffd700;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .reborn-card {
+      width: 86px;
+      height: 128px;
+      border-radius: 6px;
+      background-image: url('card_back.jpg');
+      background-size: cover;
+      border: 1px dashed #ffd700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .horizontal { transform: rotate(90deg); margin: 15px 0; }
+    .reborn-text {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 2px 6px;
+      font-size: 11px;
+      color: #ffd700;
+      border-radius: 4px;
+    }
+
+    /* ログ表示 */
+    .game-log-box {
+      width: 300px;
+      height: 110px;
+      background: rgba(10, 12, 16, 0.9);
+      border: 1px solid #4a5568;
+      border-radius: 6px;
+      padding: 8px;
+      overflow-y: auto;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+    .log-entry { margin-bottom: 4px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.06); }
+
+    /* 自分エリア */
+    .my-area {
+      background: rgba(15, 17, 23, 0.92);
+      border: 1px solid #7c683b;
+      border-radius: 8px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .player-info-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    .player-name { font-size: 15px; font-weight: bold; color: #ffd700; }
+    .player-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #2d3748; }
+    .guard-badge { background: #2b6cb0; color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+    .discard-line {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      max-width: 95%;
+      min-height: 68px;
+      margin-bottom: 8px;
+      padding: 2px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .hand-container { display: flex; gap: 15px; justify-content: center; }
+
+    .card-badge {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      background: rgba(0,0,0,0.75);
+      border: 1px solid #d4af37;
+      color: #ffd700;
+      font-weight: bold;
+      font-size: 12px;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    .card-mini .card-badge { font-size: 9px; padding: 0 3px; }
+
+    /* モーダル */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .modal-content {
+      background: #171923;
+      border: 1px solid #d4af37;
+      box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 500px;
+      width: 90%;
+    }
+    .modal-body { margin: 15px 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+    .rule-scroll { max-height: 60vh; overflow-y: auto; font-size: 13px; line-height: 1.6; padding-right: 8px; }
+    .rule-scroll section { margin-bottom: 15px; }
+    .rule-scroll h3 { color: #d4af37; margin-bottom: 4px; }
+    .card-rule-item { background: rgba(255,255,255,0.03); padding: 5px 8px; margin-bottom: 4px; border-left: 2px solid #d4af37; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="logo">XENO</div>
+      <div>
+        <button id="ruleBtn" class="btn btn-secondary">📜 ルール説明</button>
+      </div>
+    </header>
+
+    <!-- ロビー画面 -->
+    <div id="lobbyScreen" class="screen">
+      <div class="lobby-card">
+        <h1 class="title">XENO MULTIPLAYER</h1>
+        <p class="subtitle">心理と直感のカードバトル (2〜4人)</p>
+
+        <div class="input-group">
+          <label>あなたのプレイヤー名</label>
+          <input type="text" id="playerNameInput" maxlength="10" value="プレイヤー1">
+        </div>
+
+        <div>
+          <h3 style="color:#d4af37; font-size:14px; margin-bottom:8px;">◆ オンライン対戦 (WebRTC)</h3>
+          <div class="btn-row">
+            <button id="createRoomBtn" class="btn btn-gold">部屋を作る (ホスト)</button>
+          </div>
+          <div class="join-row">
+            <input type="text" id="roomCodeInput" placeholder="ルームIDを入力">
+            <button id="joinRoomBtn" class="btn btn-primary">部屋に参加</button>
+          </div>
+
+          <hr class="divider">
+
+          <h3 style="color:#d4af37; font-size:14px; margin-bottom:8px;">◆ 1台の端末で対面プレイ</h3>
+          <div class="local-row">
+            <select id="localPlayerCount">
+              <option value="2">2人対戦</option>
+              <option value="3">3人対戦</option>
+              <option value="4">4人対戦</option>
+            </select>
+            <button id="startLocalBtn" class="btn btn-secondary">対戦開始</button>
+          </div>
+        </div>
+
+        <div id="lobbyStatus" style="color:#ffd700; font-size:12px; margin-top:10px; text-align:center;"></div>
+      </div>
+    </div>
+
+    <!-- 待機ルーム画面 -->
+    <div id="waitingScreen" class="screen hidden">
+      <div class="lobby-card">
+        <h2>対戦待機ルーム</h2>
+        <div class="room-id-box">
+          <span>ルームID: </span>
+          <strong id="displayRoomId">------</strong>
+          <button id="copyRoomIdBtn" class="btn btn-secondary" style="padding:4px 8px;">コピー</button>
+        </div>
+        <p style="font-size:12px; color:#a0aec0;">参加者にこのIDを教えてください。</p>
+        <h3 style="margin-top:15px; font-size:14px;">参加者 (<span id="playerCount">1</span>/4)</h3>
+        <ul id="memberList" class="member-list"></ul>
+        <div class="btn-row">
+          <button id="startGameBtn" class="btn btn-gold" disabled>ゲームを開始する (2人以上)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- メインゲーム画面 -->
+    <div id="gameScreen" class="screen hidden">
+      <div class="playmat" id="playmat">
+        <div class="opponents-container" id="opponentsArea"></div>
+
+        <div class="center-table">
+          <div class="deck-zone">
+            <div class="deck-wrapper">
+              <div class="deck-card" id="deckVisual">
+                <div class="deck-count" id="deckCountText">18</div>
+              </div>
+              <span class="zone-label">山札</span>
+            </div>
+            <div class="reborn-wrapper">
+              <div class="reborn-card horizontal" id="rebornCard">
+                <span class="reborn-text">転生札</span>
+              </div>
+              <span class="zone-label">転生札</span>
+            </div>
+          </div>
+          <div class="game-log-box" id="logBox"></div>
+        </div>
+
+        <div class="my-area">
+          <div class="player-info-bar">
+            <span class="player-name" id="myPlayerName">自分</span>
+            <span class="player-badge" id="myStatusBadge">待機中</span>
+            <span class="guard-badge hidden" id="myGuardBadge">🛡️ 守護</span>
+          </div>
+          <div class="discard-line" id="myDiscardLine"></div>
+          <div class="hand-container" id="myHand"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- モーダル各種 -->
+    <div id="actionModal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3 id="modalTitle" style="color:#ffd700;">アクション</h3>
+        <p id="modalDesc" style="font-size:13px; color:#cbd5e0; margin-top:4px;">対象を選択してください</p>
+        <div id="modalBody" class="modal-body"></div>
+        <div class="modal-actions" id="modalActions"></div>
+      </div>
+    </div>
+
+    <div id="passTurnModal" class="modal-overlay hidden">
+      <div class="modal-content" style="text-align:center;">
+        <h2 id="passTurnPlayerName" style="color:#ffd700;">プレイヤー交代</h2>
+        <p style="margin:12px 0; font-size:13px;">画面を相手に見せないように端末を渡してください。</p>
+        <button id="passTurnReadyBtn" class="btn btn-gold">準備完了（手札を見る）</button>
+      </div>
+    </div>
+
+    <div id="ruleModal" class="modal-overlay hidden">
+      <div class="modal-content" style="max-width:650px;">
+        <h2 style="color:#d4af37; margin-bottom:10px;">XENO 公式ルール解説</h2>
+        <div class="rule-scroll">
+          <section>
+            <h3>■ 概要と勝利条件</h3>
+            <p>全18枚。各プレイヤーに1枚配り、1枚を裏向きで「転生札」として除外してスタート。山札から1枚引いて手札2枚から1枚を出して効果を発動します。</p>
+            <p><strong>勝利条件：</strong> 他プレイヤー全員を脱落させるか、山札が尽きた時点で最も数字が大きいカードを持っていた人の勝利。</p>
+          </section>
+          <section>
+            <h3>■ カード効果（RANK 1 〜 10）</h3>
+            <div class="card-rule-item"><strong>【1】少年 (革命):</strong> 1枚目は効果なし。2枚目で公開処刑発動（英雄は転生可）。</div>
+            <div class="card-rule-item"><strong>【2】兵士 (捜査):</strong> 相手1人とカード名を宣言。的中なら脱落（英雄は転生）。</div>
+            <div class="card-rule-item"><strong>【3】占師 (透視):</strong> 相手1人の手札を見る。</div>
+            <div class="card-rule-item"><strong>【4】乙女 (守護):</strong> 次の自分の手番まで相手のカード効果を受けない。</div>
+            <div class="card-rule-item"><strong>【5】死神 (疫病):</strong> 相手に引かせて2枚から見ないで1枚捨てさせる（英雄は転生）。</div>
+            <div class="card-rule-item"><strong>【6】貴族 (対決):</strong> 相手と数字比べ。小さい方が脱落（同数は両者脱落）。</div>
+            <div class="card-rule-item"><strong>【7】賢者 (選択):</strong> 次のドロー時、3枚引いて1枚選ぶ。</div>
+            <div class="card-rule-item"><strong>【8】精霊 (交換):</strong> 相手1人と手札を交換する。</div>
+            <div class="card-rule-item"><strong>【9】皇帝 (公開処刑):</strong> 相手に引かせ2枚公開、1枚処刑。※英雄は転生できず即脱落！</div>
+            <div class="card-rule-item"><strong>【10】英雄 (潜伏・転生):</strong> 出せない。皇帝以外で捨てられたら転生札で復活。</div>
+          </section>
+        </div>
+        <button id="closeRuleBtn" class="btn btn-secondary" style="margin-top:10px;">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // カード情報
+    const CARDS = {
+      1: { rank: 1, name: "少年", count: 2 },
+      2: { rank: 2, name: "兵士", count: 2 },
+      3: { rank: 3, name: "占師", count: 2 },
+      4: { rank: 4, name: "乙女", count: 2 },
+      5: { rank: 5, name: "死神", count: 2 },
+      6: { rank: 6, name: "貴族", count: 2 },
+      7: { rank: 7, name: "賢者", count: 2 },
+      8: { rank: 8, name: "精霊", count: 2 },
+      9: { rank: 9, name: "皇帝", count: 1 },
+      10: { rank: 10, name: "英雄", count: 1 }
+    };
+
+    let peer = null, connections = [], hostConn = null;
+    let isHost = false, isOnline = false, myPlayerId = "", myName = "プレイヤー1";
+
+    let gameState = {
+      mode: "local",
+      players: [],
+      turnIndex: 0,
+      deck: [],
+      rebornCard: null,
+      discardsAll: [],
+      logs: [],
+      phase: "init"
+    };
+
+    const lobbyScreen = document.getElementById("lobbyScreen");
+    const waitingScreen = document.getElementById("waitingScreen");
+    const gameScreen = document.getElementById("gameScreen");
+    const ruleModal = document.getElementById("ruleModal");
+    const actionModal = document.getElementById("actionModal");
+    const passTurnModal = document.getElementById("passTurnModal");
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("ruleBtn").onclick = () => ruleModal.classList.remove("hidden");
+      document.getElementById("closeRuleBtn").onclick = () => ruleModal.classList.add("hidden");
+
+      document.getElementById("startLocalBtn").onclick = () => {
+        const count = parseInt(document.getElementById("localPlayerCount").value, 10);
+        myName = document.getElementById("playerNameInput").value || "P1";
+        startLocalGame(count);
+      };
+
+      document.getElementById("createRoomBtn").onclick = () => {
+        myName = document.getElementById("playerNameInput").value || "ホスト";
+        initPeer(true);
+      };
+
+      document.getElementById("joinRoomBtn").onclick = () => {
+        const code = document.getElementById("roomCodeInput").value.trim();
+        if (!code) return alert("ルームIDを入力してください");
+        myName = document.getElementById("playerNameInput").value || "ゲスト";
+        initPeer(false, code);
+      };
+
+      document.getElementById("copyRoomIdBtn").onclick = () => {
+        const id = document.getElementById("displayRoomId").innerText;
+        navigator.clipboard.writeText(id).then(() => alert("ルームIDをコピーしました！"));
+      };
+
+      document.getElementById("startGameBtn").onclick = () => {
+        if (gameState.players.length < 2) return;
+        initNewDeckAndDeal();
+      };
+
+      document.getElementById("passTurnReadyBtn").onclick = () => {
+        passTurnModal.classList.add("hidden");
+        renderGame();
+      };
+    });
+
+    /* P2P 通信 */
+    function initPeer(asHost, joinRoomId = null) {
+      document.getElementById("lobbyStatus").innerText = "接続サーバーへアクセス中...";
+      peer = new Peer();
+
+      peer.on("open", (id) => {
+        myPlayerId = id;
+        isOnline = true;
+        if (asHost) {
+          isHost = true;
+          document.getElementById("displayRoomId").innerText = id;
+          lobbyScreen.classList.add("hidden");
+          waitingScreen.classList.remove("hidden");
+          gameState.players = [{ id: myPlayerId, name: myName, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false }];
+          updateMemberList();
+
+          peer.on("connection", (conn) => {
+            conn.on("open", () => {
+              if (gameState.players.length >= 4 || gameState.phase !== "init") {
+                conn.send({ type: "ERROR", msg: "満室か進行中です" });
+                conn.close();
+                return;
+              }
+              connections.push(conn);
+              conn.on("data", (data) => handleNetworkMessage(data, conn));
+            });
+            conn.on("close", () => {
+              connections = connections.filter(c => c !== conn);
+              gameState.players = gameState.players.filter(p => p.id !== conn.peer);
+              updateMemberList();
+              broadcast({ type: "UPDATE_STATE", state: gameState });
+            });
+          });
+        } else {
+          isHost = false;
+          hostConn = peer.connect(joinRoomId);
+          hostConn.on("open", () => hostConn.send({ type: "JOIN", name: myName }));
+          hostConn.on("data", (data) => handleNetworkMessage(data));
+          hostConn.on("close", () => alert("ホストとの接続が切断されました"));
+        }
+      });
+
+      peer.on("error", (err) => alert("通信エラー: " + err));
+    }
+
+    function broadcast(msg) {
+      connections.forEach(conn => { if (conn.open) conn.send(msg); });
+    }
+
+    function handleNetworkMessage(msg, senderConn = null) {
+      if (msg.type === "JOIN" && isHost) {
+        gameState.players.push({ id: senderConn.peer, name: msg.name, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false });
+        updateMemberList();
+        broadcast({ type: "UPDATE_STATE", state: gameState });
+        if (gameState.players.length >= 2) document.getElementById("startGameBtn").disabled = false;
+      } else if (msg.type === "UPDATE_STATE") {
+        gameState = msg.state;
+        if (!waitingScreen.classList.contains("hidden") && gameState.phase !== "init") {
+          waitingScreen.classList.add("hidden");
+          gameScreen.classList.remove("hidden");
+        }
+        renderGame();
+      } else if (msg.type === "ACTION" && isHost) {
+        processCardPlay(msg.playerId, msg.cardRank, msg.targetId, msg.extra);
+      }
+    }
+
+    function updateMemberList() {
+      const list = document.getElementById("memberList");
+      list.innerHTML = "";
+      gameState.players.forEach(p => {
+        const li = document.createElement("li");
+        li.innerText = `${p.name} ${p.id === myPlayerId ? "(あなた)" : ""}`;
+        list.appendChild(li);
+      });
+      document.getElementById("playerCount").innerText = gameState.players.length;
+    }
+
+    /* ローカル開始 */
+    function startLocalGame(count) {
+      isOnline = false;
+      isHost = true;
+      gameState.mode = "local";
+      gameState.players = [];
+      for (let i = 1; i <= count; i++) {
+        gameState.players.push({
+          id: `local_p${i}`,
+          name: i === 1 ? myName : `プレイヤー${i}`,
+          hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false
+        });
+      }
+      myPlayerId = gameState.players[0].id;
+      lobbyScreen.classList.add("hidden");
+      gameScreen.classList.remove("hidden");
+      initNewDeckAndDeal();
+    }
+
+    /* デッキ初期化 */
+    function initNewDeckAndDeal() {
+      let deck = [];
+      for (let rank = 1; rank <= 10; rank++) {
+        for (let i = 0; i < CARDS[rank].count; i++) deck.push(rank);
+      }
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+
+      gameState.rebornCard = deck.pop();
+      gameState.players.forEach(p => {
+        p.hand = [deck.pop()];
+        p.discards = [];
+        p.isProtected = false;
+        p.hasKenja = false;
+        p.isEliminated = false;
+      });
+
+      gameState.deck = deck;
+      gameState.discardsAll = [];
+      gameState.logs = ["ゲーム開始。1枚が転生札として除外されました。"];
+      gameState.turnIndex = 0;
+      gameState.phase = "action";
+
+      if (isOnline) {
+        waitingScreen.classList.add("hidden");
+        gameScreen.classList.remove("hidden");
+        broadcast({ type: "UPDATE_STATE", state: gameState });
+      }
+      startTurn();
+    }
+
+    function getCurrentPlayer() { return gameState.players[gameState.turnIndex]; }
+
+    function startTurn() {
+      const current = getCurrentPlayer();
+      if (current.isEliminated) { nextTurn(); return; }
+
+      current.isProtected = false;
+      addLog(`--- 【${current.name}】の手番 ---`);
+
+      if (gameState.deck.length === 0) {
+        endGameByDeckEmpty();
+        return;
+      }
+
+      if (gameState.mode === "local") {
+        myPlayerId = current.id;
+        document.getElementById("passTurnPlayerName").innerText = `${current.name} の手番です`;
+        passTurnModal.classList.remove("hidden");
+      }
+
+      if (current.hasKenja) {
+        current.hasKenja = false;
+        const count = Math.min(3, gameState.deck.length);
+        const drawn = [];
+        for (let i = 0; i < count; i++) drawn.push(gameState.deck.pop());
+        if (current.id === myPlayerId) {
+          showChoiceModal("【賢者：選択】", "手札に加える1枚を選択してください（残りは山札に戻ります）", drawn, (selected) => {
+            current.hand.push(selected);
+            drawn.splice(drawn.indexOf(selected), 1);
+            gameState.deck.push(...drawn);
+            for (let i = gameState.deck.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [gameState.deck[i], gameState.deck[j]] = [gameState.deck[j], gameState.deck[i]];
+            }
+            syncAndRender();
+          });
+        }
+      } else {
+        current.hand.push(gameState.deck.pop());
+        syncAndRender();
+      }
+    }
+
+    function nextTurn() {
+      const alive = gameState.players.filter(p => !p.isEliminated);
+      if (alive.length <= 1) {
+        endGameByLastAlive(alive[0]);
+        return;
+      }
+      gameState.turnIndex = (gameState.turnIndex + 1) % gameState.players.length;
+      startTurn();
+    }
+
+    function requestPlayCard(cardRank) {
+      const current = getCurrentPlayer();
+      if (current.id !== myPlayerId) return;
+      if (cardRank === 10) return alert("【10: 英雄】は自分から場に出すことはできません。");
+
+      const needTarget = [1, 2, 3, 5, 6, 8, 9];
+      const isSecondBoy = (cardRank === 1 && gameState.discardsAll.includes(1));
+
+      if (needTarget.includes(cardRank) && (cardRank !== 1 || isSecondBoy)) {
+        const valid = gameState.players.filter(p => p.id !== current.id && !p.isEliminated);
+        if (valid.length === 0) {
+          applyCard(current.id, cardRank, null, null);
+          return;
+        }
+        showTargetSelectModal(cardRank, valid, (targetId, extra) => {
+          applyCard(current.id, cardRank, targetId, extra);
+        });
+      } else {
+        applyCard(current.id, cardRank, null, null);
+      }
+    }
+
+    function applyCard(playerId, cardRank, targetId, extra) {
+      if (isOnline && !isHost) {
+        hostConn.send({ type: "ACTION", playerId, cardRank, targetId, extra });
+      } else {
+        processCardPlay(playerId, cardRank, targetId, extra);
+      }
+    }
+
+    function processCardPlay(playerId, cardRank, targetId, extra) {
+      const player = gameState.players.find(p => p.id === playerId);
+      const target = gameState.players.find(p => p.id === targetId);
+
+      const idx = player.hand.indexOf(cardRank);
+      if (idx !== -1) player.hand.splice(idx, 1);
+      player.discards.push(cardRank);
+      gameState.discardsAll.push(cardRank);
+
+      addLog(`${player.name} は【${cardRank}: ${CARDS[cardRank].name}】を使用した。`);
+
+      if (target && target.isProtected) {
+        addLog(`${target.name} は乙女の守護により効果を無効化した！`);
+        finishAction();
+        return;
+      }
+
+      switch (cardRank) {
+        case 1:
+          if (gameState.discardsAll.filter(c => c === 1).length >= 2) {
+            addLog(`革命が発動！${target.name} を公開処刑する。`);
+            executePublicExecution(player, target, false);
+            return;
+          }
+          break;
+        case 2:
+          const guess = extra.guessRank;
+          addLog(`${player.name} は ${target.name} に【${guess}: ${CARDS[guess].name}】の捜査を宣言！`);
+          if (target.hand.includes(guess)) {
+            if (guess === 10) {
+              addLog(`的中！しかし英雄は転生する！`);
+              executeReborn(target);
+            } else {
+              addLog(`的中！${target.name} は脱落した！`);
+              eliminatePlayer(target);
+            }
+          } else {
+            addLog(`捜査は外れた。`);
+          }
+          break;
+        case 3:
+          addLog(`${player.name} は ${target.name} の手札を透視した。`);
+          if (player.id === myPlayerId) {
+            alert(`【透視結果】\n${target.name} の手札: 【${target.hand.map(c => `${c}:${CARDS[c].name}`).join(", ")}】`);
+          }
+          break;
+        case 4:
+          player.isProtected = true;
+          addLog(`${player.name} は聖なる守護を得た。`);
+          break;
+        case 5:
+          if (gameState.deck.length === 0) {
+            addLog(`山札がないため死神の効果は不発。`);
+          } else {
+            target.hand.push(gameState.deck.pop());
+            const dIdx = Math.floor(Math.random() * target.hand.length);
+            const discarded = target.hand.splice(dIdx, 1)[0];
+            target.discards.push(discarded);
+            gameState.discardsAll.push(discarded);
+            addLog(`死神の疫病により ${target.name} のカードが1枚捨てられた。`);
+            if (discarded === 10) executeReborn(target);
+          }
+          break;
+        case 6:
+          addLog(`${player.name} と ${target.name} の決闘！`);
+          const pVal = player.hand[0], tVal = target.hand[0];
+          if (pVal < tVal) {
+            addLog(`敗北！${player.name} は脱落！`);
+            eliminatePlayer(player);
+          } else if (pVal > tVal) {
+            addLog(`勝利！${target.name} は脱落！`);
+            eliminatePlayer(target);
+          } else {
+            addLog(`相打ち！両者脱落！`);
+            eliminatePlayer(player);
+            eliminatePlayer(target);
+          }
+          break;
+        case 7:
+          player.hasKenja = true;
+          addLog(`${player.name} は賢者の選択を予約した。`);
+          break;
+        case 8:
+          addLog(`${player.name} と ${target.name} は手札を交換した。`);
+          const temp = [...player.hand];
+          player.hand = [...target.hand];
+          target.hand = temp;
+          break;
+        case 9:
+          if (gameState.deck.length === 0) {
+            addLog(`山札がないため皇帝の効果は不発。`);
+          } else {
+            executePublicExecution(player, target, true);
+            return;
+          }
+          break;
+      }
+      finishAction();
+    }
+
+    function executePublicExecution(executor, target, isEmperor) {
+      target.hand.push(gameState.deck.pop());
+      addLog(`${target.name} の手札が開示された: 【${target.hand.map(c => `${c}:${CARDS[c].name}`).join(", ")}】`);
+
+      if (executor.id === myPlayerId) {
+        showChoiceModal("【公開処刑】捨てさせるカードを選択", `${target.name} の手札から1枚選んでください`, target.hand, (chosen) => {
+          applyExecutionChoice(executor, target, chosen, isEmperor);
+        });
+      } else {
+        const chosen = Math.max(...target.hand);
+        applyExecutionChoice(executor, target, chosen, isEmperor);
+      }
+    }
+
+    function applyExecutionChoice(executor, target, chosenCard, isEmperor) {
+      const idx = target.hand.indexOf(chosenCard);
+      target.hand.splice(idx, 1);
+      target.discards.push(chosenCard);
+      gameState.discardsAll.push(chosenCard);
+      addLog(`${executor.name} は ${target.name} の【${chosenCard}: ${CARDS[chosenCard].name}】を処刑した！`);
+
+      if (chosenCard === 10) {
+        if (isEmperor) {
+          addLog(`皇帝により英雄は完全に処刑された！${target.name} は脱落！`);
+          eliminatePlayer(target);
+        } else {
+          addLog(`英雄は転生する！`);
+          executeReborn(target);
+        }
+      }
+      finishAction();
+    }
+
+    function executeReborn(player) {
+      while (player.hand.length > 0) {
+        const c = player.hand.pop();
+        player.discards.push(c);
+        gameState.discardsAll.push(c);
+      }
+      if (gameState.rebornCard) {
+        player.hand.push(gameState.rebornCard);
+        gameState.rebornCard = null;
+        addLog(`✨ ${player.name} は転生札を手に入れて復活した！`);
+      } else {
+        eliminatePlayer(player);
+      }
+    }
+
+    function eliminatePlayer(player) {
+      player.isEliminated = true;
+      while (player.hand.length > 0) {
+        const c = player.hand.pop();
+        player.discards.push(c);
+        gameState.discardsAll.push(c);
+      }
+    }
+
+    function finishAction() {
+      syncAndRender();
+      setTimeout(nextTurn, 1000);
+    }
+
+    function endGameByLastAlive(winner) {
+      gameState.phase = "ended";
+      if (winner) {
+        addLog(`🏆 勝者決定！【${winner.name}】の勝利！`);
+        alert(`🎉 勝者: ${winner.name}！`);
+      } else {
+        addLog(`全員脱落のため引き分け（DRAW）です。`);
+        alert(`引き分け（DRAW）！`);
+      }
+      syncAndRender();
+    }
+
+    function endGameByDeckEmpty() {
+      gameState.phase = "ended";
+      addLog(`山札が尽きました！手札オープン勝負！`);
+      const alive = gameState.players.filter(p => !p.isEliminated);
+      alive.sort((a, b) => (b.hand[0] || 0) - (a.hand[0] || 0));
+
+      if (alive.length > 1 && alive[0].hand[0] === alive[1].hand[0]) {
+        alert(`引き分け（DRAW）！`);
+      } else if (alive.length > 0) {
+        alert(`🎉 勝者: ${alive[0].name} (RANK ${alive[0].hand[0]})`);
+      }
+      syncAndRender();
+    }
+
+    function syncAndRender() {
+      if (isOnline && isHost) broadcast({ type: "UPDATE_STATE", state: gameState });
+      renderGame();
+    }
+
+    /* UI描画 (アップロードされた No1.jpg〜No10.jpg を直接指定) */
+    function renderGame() {
+      document.getElementById("deckCountText").innerText = gameState.deck.length;
+      document.getElementById("rebornCard").style.opacity = gameState.rebornCard ? "1" : "0.2";
+
+      const logBox = document.getElementById("logBox");
+      logBox.innerHTML = "";
+      gameState.logs.slice(-7).reverse().forEach(log => {
+        const div = document.createElement("div");
+        div.className = "log-entry";
+        div.innerText = log;
+        logBox.appendChild(div);
+      });
+
+      const me = gameState.players.find(p => p.id === myPlayerId) || gameState.players[0];
+      const opponents = gameState.players.filter(p => p.id !== me.id);
+
+      document.getElementById("myPlayerName").innerText = me.name;
+      document.getElementById("myStatusBadge").innerText = me.isEliminated ? "脱落" : (getCurrentPlayer().id === me.id ? "あなたの手番" : "相手の手番");
+      document.getElementById("myGuardBadge").classList.toggle("hidden", !me.isProtected);
+
+      const myDiscard = document.getElementById("myDiscardLine");
+      myDiscard.innerHTML = "";
+      me.discards.forEach(c => myDiscard.appendChild(createCardElem(c, true)));
+
+      const myHand = document.getElementById("myHand");
+      myHand.innerHTML = "";
+      const isMyTurn = (getCurrentPlayer().id === me.id && gameState.phase === "action" && !me.isEliminated);
+      me.hand.forEach(c => {
+        const el = createCardElem(c, false);
+        if (!isMyTurn || c === 10) el.classList.add("disabled");
+        else el.onclick = () => requestPlayCard(c);
+        myHand.appendChild(el);
+      });
+
+      const oppArea = document.getElementById("opponentsArea");
+      oppArea.innerHTML = "";
+      opponents.forEach(opp => {
+        const box = document.createElement("div");
+        box.className = `opponent-box ${opp.isEliminated ? "eliminated" : ""} ${getCurrentPlayer().id === opp.id ? "active-turn" : ""}`;
+        box.innerHTML = `<div class="opp-name">${opp.name} ${opp.isProtected ? "🛡️" : ""}</div>`;
+
+        const cardsDiv = document.createElement("div");
+        cardsDiv.className = "opp-cards";
+        for (let i = 0; i < opp.hand.length; i++) {
+          const b = document.createElement("div");
+          b.className = "card-mini card-back";
+          cardsDiv.appendChild(b);
+        }
+        box.appendChild(cardsDiv);
+
+        const disDiv = document.createElement("div");
+        disDiv.className = "opp-discard";
+        opp.discards.forEach(c => disDiv.appendChild(createCardElem(c, true)));
+        box.appendChild(disDiv);
+
+        oppArea.appendChild(box);
+      });
+    }
+
+    function createCardElem(rank, isMini = false) {
+      const card = document.createElement("div");
+      card.className = isMini ? "card-mini" : "card";
+      // アップロードされた画像「No1.jpg」〜「No10.jpg」を直接読み込む
+      card.style.backgroundImage = `url('No${rank}.jpg')`;
+
+      const badge = document.createElement("div");
+      badge.className = "card-badge";
+      badge.innerText = `${rank} ${isMini ? "" : CARDS[rank].name}`;
+      card.appendChild(badge);
+      return card;
+    }
+
+    function addLog(msg) {
+      gameState.logs.push(msg);
+      renderGame();
+    }
+
+    function showTargetSelectModal(cardRank, targetPlayers, onSelect) {
+      actionModal.classList.remove("hidden");
+      document.getElementById("modalTitle").innerText = `【${cardRank}: ${CARDS[cardRank].name}】の対象選択`;
+      document.getElementById("modalDesc").innerText = "効果を適用するプレイヤーを選択してください。";
+
+      const body = document.getElementById("modalBody");
+      body.innerHTML = "";
+      targetPlayers.forEach(tp => {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-gold";
+        btn.innerText = tp.name;
+        btn.onclick = () => {
+          if (cardRank === 2) {
+            showGuessRankModal(tp.name, (guessRank) => {
+              actionModal.classList.add("hidden");
+              onSelect(tp.id, { guessRank });
+            });
+          } else {
+            actionModal.classList.add("hidden");
+            onSelect(tp.id, null);
+          }
+        };
+        body.appendChild(btn);
+      });
+      document.getElementById("modalActions").innerHTML = `<button class="btn btn-secondary" onclick="actionModal.classList.add('hidden')">キャンセル</button>`;
+    }
+
+    function showGuessRankModal(targetName, onGuess) {
+      document.getElementById("modalTitle").innerText = `【兵士：捜査】`;
+      document.getElementById("modalDesc").innerText = `${targetName} の手札を宣言（1〜10）`;
+      const body = document.getElementById("modalBody");
+      body.innerHTML = "";
+      for (let r = 1; r <= 10; r++) {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-primary";
+        btn.style.margin = "4px";
+        btn.innerText = `${r}: ${CARDS[r].name}`;
+        btn.onclick = () => onGuess(r);
+        body.appendChild(btn);
+      }
+    }
+
+    function showChoiceModal(title, desc, cardRanks, onSelect) {
+      actionModal.classList.remove("hidden");
+      document.getElementById("modalTitle").innerText = title;
+      document.getElementById("modalDesc").innerText = desc;
+      const body = document.getElementById("modalBody");
+      body.innerHTML = "";
+      cardRanks.forEach(r => {
+        const cardEl = createCardElem(r, false);
+        cardEl.onclick = () => {
+          actionModal.classList.add("hidden");
+          onSelect(r);
+        };
+        body.appendChild(cardEl);
+      });
+      document.getElementById("modalActions").innerHTML = "";
+    }
+  </script>
+</body>
+</html>
