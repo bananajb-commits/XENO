@@ -4,15 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>XENO - オンラインカードゲーム</title>
-  <!-- PeerJS (P2P通信) -->
+  <!-- PeerJS -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body {
       font-family: "Cinzel", "Yu Mincho", "Hiragino Mincho ProN", serif;
       background-color: #0b0d10;
@@ -70,14 +65,14 @@
       border: 1px solid #7c683b;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 15px rgba(212, 175, 55, 0.2);
       border-radius: 8px;
-      padding: 30px;
+      padding: 25px 30px;
       max-width: 480px;
       width: 100%;
     }
-    .title { text-align: center; color: #d4af37; font-size: 26px; letter-spacing: 2px; }
-    .subtitle { text-align: center; color: #a0aec0; font-size: 13px; margin-bottom: 25px; }
+    .title { text-align: center; color: #d4af37; font-size: 24px; letter-spacing: 2px; }
+    .subtitle { text-align: center; color: #a0aec0; font-size: 13px; margin-bottom: 20px; }
     .input-group { margin-bottom: 15px; }
-    .input-group label { display: block; font-size: 13px; color: #cbd5e0; margin-bottom: 6px; }
+    .input-group label { display: block; font-size: 13px; color: #cbd5e0; margin-bottom: 5px; }
     input[type="text"], select {
       width: 100%;
       padding: 10px;
@@ -87,10 +82,9 @@
       color: #fff;
       font-size: 15px;
     }
-    .btn-row { display: flex; gap: 10px; margin: 12px 0; }
+    .btn-row { display: flex; gap: 10px; margin: 10px 0; }
     .btn-row .btn { flex: 1; }
-    .join-row, .local-row { display: flex; gap: 10px; margin-top: 10px; }
-    .divider { border: 0; border-top: 1px dashed #4a5568; margin: 20px 0; }
+    .divider { border: 0; border-top: 1px dashed #4a5568; margin: 18px 0; }
     .room-id-box {
       background: #0f1217;
       padding: 10px;
@@ -99,9 +93,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin: 15px 0;
+      margin: 12px 0;
     }
-    .member-list { list-style: none; margin: 15px 0; }
+    .member-list { list-style: none; margin: 12px 0; }
     .member-list li {
       padding: 8px 12px;
       background: #1a202c;
@@ -128,7 +122,7 @@
     .opponents-container {
       display: flex;
       justify-content: space-around;
-      min-height: 150px;
+      min-height: 145px;
       gap: 10px;
     }
     .opponent-box {
@@ -136,7 +130,7 @@
       border: 1px solid #4a5568;
       border-radius: 6px;
       padding: 8px;
-      min-width: 160px;
+      min-width: 150px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -156,7 +150,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 35px;
+      gap: 30px;
     }
     .deck-zone { display: flex; align-items: center; gap: 20px; }
     .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -164,8 +158,8 @@
 
     /* カードデザイン (直下の No1.jpg〜No10.jpg, card_back.jpg を使用) */
     .card {
-      width: 86px;
-      height: 128px;
+      width: 84px;
+      height: 126px;
       border-radius: 6px;
       position: relative;
       background-size: cover;
@@ -198,8 +192,8 @@
       background-size: cover;
     }
     .deck-card {
-      width: 86px;
-      height: 128px;
+      width: 84px;
+      height: 126px;
       border-radius: 6px;
       background-image: url('card_back.jpg');
       background-size: cover;
@@ -218,8 +212,8 @@
       border-radius: 10px;
     }
     .reborn-card {
-      width: 86px;
-      height: 128px;
+      width: 84px;
+      height: 126px;
       border-radius: 6px;
       background-image: url('card_back.jpg');
       background-size: cover;
@@ -237,7 +231,6 @@
       border-radius: 4px;
     }
 
-    /* ログ表示 */
     .game-log-box {
       width: 300px;
       height: 110px;
@@ -252,7 +245,6 @@
     }
     .log-entry { margin-bottom: 4px; line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.06); }
 
-    /* 自分エリア */
     .my-area {
       background: rgba(15, 17, 23, 0.92);
       border: 1px solid #7c683b;
@@ -266,7 +258,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       width: 100%;
     }
     .player-name { font-size: 15px; font-weight: bold; color: #ffd700; }
@@ -298,7 +290,6 @@
     }
     .card-mini .card-badge { font-size: 9px; padding: 0 3px; }
 
-    /* モーダル */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -345,47 +336,52 @@
           <input type="text" id="playerNameInput" maxlength="10" value="プレイヤー1">
         </div>
 
+        <div class="input-group">
+          <label>ルームID（好きな合言葉を決めてください）</label>
+          <input type="text" id="customRoomIdInput" placeholder="例: room1, xeno777 など" value="room1">
+        </div>
+
         <div>
-          <h3 style="color:#d4af37; font-size:14px; margin-bottom:8px;">◆ オンライン対戦 (WebRTC)</h3>
           <div class="btn-row">
             <button id="createRoomBtn" class="btn btn-gold">部屋を作る (ホスト)</button>
-          </div>
-          <div class="join-row">
-            <input type="text" id="roomCodeInput" placeholder="ルームIDを入力">
-            <button id="joinRoomBtn" class="btn btn-primary">部屋に参加</button>
+            <button id="joinRoomBtn" class="btn btn-primary">部屋に参加する</button>
           </div>
 
           <hr class="divider">
 
-          <h3 style="color:#d4af37; font-size:14px; margin-bottom:8px;">◆ 1台の端末で対面プレイ</h3>
-          <div class="local-row">
+          <h3 style="color:#d4af37; font-size:13px; margin-bottom:8px;">◆ 1台の端末で対面プレイ</h3>
+          <div style="display:flex; gap:10px;">
             <select id="localPlayerCount">
               <option value="2">2人対戦</option>
               <option value="3">3人対戦</option>
               <option value="4">4人対戦</option>
             </select>
-            <button id="startLocalBtn" class="btn btn-secondary">対戦開始</button>
+            <button id="startLocalBtn" class="btn btn-secondary">ローカル対戦</button>
           </div>
         </div>
 
-        <div id="lobbyStatus" style="color:#ffd700; font-size:12px; margin-top:10px; text-align:center;"></div>
+        <div id="lobbyStatus" style="color:#ffd700; font-size:13px; margin-top:12px; text-align:center;"></div>
       </div>
     </div>
 
     <!-- 待機ルーム画面 -->
     <div id="waitingScreen" class="screen hidden">
       <div class="lobby-card">
-        <h2>対戦待機ルーム</h2>
+        <h2 style="color:#d4af37;">対戦待機ルーム</h2>
         <div class="room-id-box">
-          <span>ルームID: </span>
-          <strong id="displayRoomId">------</strong>
-          <button id="copyRoomIdBtn" class="btn btn-secondary" style="padding:4px 8px;">コピー</button>
+          <span>合言葉（ルームID）: </span>
+          <strong id="displayRoomId" style="color:#ffd700; font-size:16px;">------</strong>
         </div>
-        <p style="font-size:12px; color:#a0aec0;">参加者にこのIDを教えてください。</p>
+        <p style="font-size:12px; color:#a0aec0;">対戦相手に同じ合言葉を入力してもらってください。</p>
+
         <h3 style="margin-top:15px; font-size:14px;">参加者 (<span id="playerCount">1</span>/4)</h3>
         <ul id="memberList" class="member-list"></ul>
-        <div class="btn-row">
+
+        <div class="btn-row" id="hostActionRow">
           <button id="startGameBtn" class="btn btn-gold" disabled>ゲームを開始する (2人以上)</button>
+        </div>
+        <div id="guestWaitMsg" class="hidden" style="text-align:center; color:#a0aec0; font-size:13px; margin-top:10px;">
+          ホストがゲームを開始するのをお待ちください...
         </div>
       </div>
     </div>
@@ -472,7 +468,6 @@
   </div>
 
   <script>
-    // カード情報
     const CARDS = {
       1: { rank: 1, name: "少年", count: 2 },
       2: { rank: 2, name: "兵士", count: 2 },
@@ -507,31 +502,42 @@
     const actionModal = document.getElementById("actionModal");
     const passTurnModal = document.getElementById("passTurnModal");
 
+    const PEER_PREFIX = "xeno-banana-v1-"; // 世界中の重複を防ぐ接頭辞
+
+    // Googleの公開STUNサーバー（接続を安定させる）
+    const PEER_CONFIG = {
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      }
+    };
+
     window.addEventListener("DOMContentLoaded", () => {
       document.getElementById("ruleBtn").onclick = () => ruleModal.classList.remove("hidden");
       document.getElementById("closeRuleBtn").onclick = () => ruleModal.classList.add("hidden");
 
       document.getElementById("startLocalBtn").onclick = () => {
         const count = parseInt(document.getElementById("localPlayerCount").value, 10);
-        myName = document.getElementById("playerNameInput").value || "P1";
+        myName = document.getElementById("playerNameInput").value.trim() || "P1";
         startLocalGame(count);
       };
 
+      // 部屋を作る
       document.getElementById("createRoomBtn").onclick = () => {
-        myName = document.getElementById("playerNameInput").value || "ホスト";
-        initPeer(true);
+        const customId = document.getElementById("customRoomIdInput").value.trim();
+        if (!customId) return alert("ルームIDを入力してください");
+        myName = document.getElementById("playerNameInput").value.trim() || "ホスト";
+        initPeer(true, customId);
       };
 
+      // 部屋に参加する
       document.getElementById("joinRoomBtn").onclick = () => {
-        const code = document.getElementById("roomCodeInput").value.trim();
-        if (!code) return alert("ルームIDを入力してください");
-        myName = document.getElementById("playerNameInput").value || "ゲスト";
-        initPeer(false, code);
-      };
-
-      document.getElementById("copyRoomIdBtn").onclick = () => {
-        const id = document.getElementById("displayRoomId").innerText;
-        navigator.clipboard.writeText(id).then(() => alert("ルームIDをコピーしました！"));
+        const customId = document.getElementById("customRoomIdInput").value.trim();
+        if (!customId) return alert("参加するルームIDを入力してください");
+        myName = document.getElementById("playerNameInput").value.trim() || "ゲスト";
+        initPeer(false, customId);
       };
 
       document.getElementById("startGameBtn").onclick = () => {
@@ -545,27 +551,44 @@
       };
     });
 
-    /* P2P 通信 */
-    function initPeer(asHost, joinRoomId = null) {
-      document.getElementById("lobbyStatus").innerText = "接続サーバーへアクセス中...";
-      peer = new Peer();
+    /* ================= P2P 通信 (PeerJS) ================= */
+    function initPeer(asHost, userRoomId) {
+      const statusEl = document.getElementById("lobbyStatus");
+      statusEl.innerText = "接続サーバーと通信中...";
 
-      peer.on("open", (id) => {
-        myPlayerId = id;
-        isOnline = true;
-        if (asHost) {
+      const targetPeerId = PEER_PREFIX + userRoomId;
+
+      if (asHost) {
+        // ホスト：ユーザーが入力したIDで作成
+        peer = new Peer(targetPeerId, PEER_CONFIG);
+
+        peer.on("open", (id) => {
+          myPlayerId = id;
+          isOnline = true;
           isHost = true;
-          document.getElementById("displayRoomId").innerText = id;
+          document.getElementById("displayRoomId").innerText = userRoomId;
+          document.getElementById("hostActionRow").classList.remove("hidden");
+          document.getElementById("guestWaitMsg").classList.add("hidden");
+
           lobbyScreen.classList.add("hidden");
           waitingScreen.classList.remove("hidden");
-          gameState.players = [{ id: myPlayerId, name: myName, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false }];
+
+          gameState.players = [{
+            id: myPlayerId,
+            name: myName,
+            hand: [],
+            discards: [],
+            isProtected: false,
+            hasKenja: false,
+            isEliminated: false
+          }];
           updateMemberList();
 
           peer.on("connection", (conn) => {
             conn.on("open", () => {
               if (gameState.players.length >= 4 || gameState.phase !== "init") {
                 conn.send({ type: "ERROR", msg: "満室か進行中です" });
-                conn.close();
+                setTimeout(() => conn.close(), 500);
                 return;
               }
               connections.push(conn);
@@ -578,37 +601,90 @@
               broadcast({ type: "UPDATE_STATE", state: gameState });
             });
           });
-        } else {
+        });
+
+        peer.on("error", (err) => {
+          if (err.type === "unavailable-id") {
+            alert("そのルームIDは既に使用されています。別のIDを指定するか、既にある部屋に参加してください。");
+          } else {
+            alert("エラー: " + err);
+          }
+          statusEl.innerText = "";
+        });
+
+      } else {
+        // ゲスト：ランダムIDで開始し、ホストへ接続
+        peer = new Peer(PEER_CONFIG);
+
+        peer.on("open", (id) => {
+          myPlayerId = id;
+          isOnline = true;
           isHost = false;
-          hostConn = peer.connect(joinRoomId);
-          hostConn.on("open", () => hostConn.send({ type: "JOIN", name: myName }));
+
+          statusEl.innerText = "ホストを検索中...";
+          hostConn = peer.connect(targetPeerId, { reliable: true });
+
+          hostConn.on("open", () => {
+            statusEl.innerText = "";
+            document.getElementById("displayRoomId").innerText = userRoomId;
+            document.getElementById("hostActionRow").classList.add("hidden");
+            document.getElementById("guestWaitMsg").classList.remove("hidden");
+
+            // 待機画面へ切り替え！
+            lobbyScreen.classList.add("hidden");
+            waitingScreen.classList.remove("hidden");
+
+            // ホストへ参加通知
+            hostConn.send({ type: "JOIN", name: myName });
+          });
+
           hostConn.on("data", (data) => handleNetworkMessage(data));
           hostConn.on("close", () => alert("ホストとの接続が切断されました"));
-        }
-      });
+        });
 
-      peer.on("error", (err) => alert("通信エラー: " + err));
+        peer.on("error", (err) => {
+          if (err.type === "peer-unavailable") {
+            alert("指定したルームIDのホストが見つかりません。部屋が作成されているか確認してください。");
+          } else {
+            alert("接続エラー: " + err);
+          }
+          statusEl.innerText = "";
+        });
+      }
     }
 
     function broadcast(msg) {
-      connections.forEach(conn => { if (conn.open) conn.send(msg); });
+      connections.forEach(conn => { if (conn && conn.open) conn.send(msg); });
     }
 
     function handleNetworkMessage(msg, senderConn = null) {
       if (msg.type === "JOIN" && isHost) {
-        gameState.players.push({ id: senderConn.peer, name: msg.name, hand: [], discards: [], isProtected: false, hasKenja: false, isEliminated: false });
+        gameState.players.push({
+          id: senderConn.peer,
+          name: msg.name,
+          hand: [],
+          discards: [],
+          isProtected: false,
+          hasKenja: false,
+          isEliminated: false
+        });
         updateMemberList();
         broadcast({ type: "UPDATE_STATE", state: gameState });
-        if (gameState.players.length >= 2) document.getElementById("startGameBtn").disabled = false;
+        if (gameState.players.length >= 2) {
+          document.getElementById("startGameBtn").disabled = false;
+        }
       } else if (msg.type === "UPDATE_STATE") {
         gameState = msg.state;
-        if (!waitingScreen.classList.contains("hidden") && gameState.phase !== "init") {
+        updateMemberList();
+        if (gameState.phase !== "init") {
           waitingScreen.classList.add("hidden");
           gameScreen.classList.remove("hidden");
         }
         renderGame();
       } else if (msg.type === "ACTION" && isHost) {
         processCardPlay(msg.playerId, msg.cardRank, msg.targetId, msg.extra);
+      } else if (msg.type === "ERROR") {
+        alert(msg.msg);
       }
     }
 
@@ -623,7 +699,7 @@
       document.getElementById("playerCount").innerText = gameState.players.length;
     }
 
-    /* ローカル開始 */
+    /* ================= ローカル戦 ================= */
     function startLocalGame(count) {
       isOnline = false;
       isHost = true;
@@ -642,7 +718,7 @@
       initNewDeckAndDeal();
     }
 
-    /* デッキ初期化 */
+    /* ================= ゲーム進行ロジック ================= */
     function initNewDeckAndDeal() {
       let deck = [];
       for (let rank = 1; rank <= 10; rank++) {
@@ -702,7 +778,7 @@
         const drawn = [];
         for (let i = 0; i < count; i++) drawn.push(gameState.deck.pop());
         if (current.id === myPlayerId) {
-          showChoiceModal("【賢者：選択】", "手札に加える1枚を選択してください（残りは山札に戻ります）", drawn, (selected) => {
+          showChoiceModal("【賢者：選択】", "手札に加える1枚を選択してください（残りは山札へ）", drawn, (selected) => {
             current.hand.push(selected);
             drawn.splice(drawn.indexOf(selected), 1);
             gameState.deck.push(...drawn);
@@ -952,7 +1028,6 @@
       renderGame();
     }
 
-    /* UI描画 (アップロードされた No1.jpg〜No10.jpg を直接指定) */
     function renderGame() {
       document.getElementById("deckCountText").innerText = gameState.deck.length;
       document.getElementById("rebornCard").style.opacity = gameState.rebornCard ? "1" : "0.2";
@@ -1015,7 +1090,6 @@
     function createCardElem(rank, isMini = false) {
       const card = document.createElement("div");
       card.className = isMini ? "card-mini" : "card";
-      // アップロードされた画像「No1.jpg」〜「No10.jpg」を直接読み込む
       card.style.backgroundImage = `url('No${rank}.jpg')`;
 
       const badge = document.createElement("div");
