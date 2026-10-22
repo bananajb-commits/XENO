@@ -151,7 +151,7 @@
       font-size: 13px;
     }
 
-    /* ================= プレイマット（画面完全収まり） ================= */
+    /* ================= プレイマット盤面 ================= */
     .playmat {
       width: 100vw;
       height: calc(100vh - 42px);
@@ -193,7 +193,7 @@
     .opp-name { font-size: 12px; font-weight: 700; color: #cbd5e0; }
     .opp-cards { display: flex; gap: 3px; }
 
-    /* 2 & 4. 場の捨て札ゾーン（独立レーン） */
+    /* ================= 捨て札ゾーン（中央を基準に均等展開） ================= */
     .field-zone {
       display: flex;
       flex-direction: column;
@@ -212,8 +212,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       flex: 1;
-      max-width: 320px;
+      max-width: 340px;
     }
     .lane-label {
       font-size: 9px;
@@ -221,21 +222,44 @@
       letter-spacing: 1px;
       margin-bottom: 2px;
     }
-    /* スクロール不要！重なり展開 */
+
+    /* ★真ん中を基準に左右対称に重なり展開するレーン */
     .lane-cards {
       display: flex;
       justify-content: center;
       align-items: center;
       width: 100%;
+      position: relative;
     }
     .lane-cards .card-mini {
-      margin-left: -10px;
-      transition: transform 0.2s;
+      margin: 0 -7px; /* 左右均等のマイナスマージンで中心を崩さず展開 */
+      transition: transform 0.2s, z-index 0.2s;
     }
-    .lane-cards .card-mini:first-child { margin-left: 0; }
-    .lane-cards .card-mini:hover {
-      transform: translateY(-6px) scale(1.15);
-      z-index: 20;
+
+    /* ★相手の捨て札：真ん中（テーブル中央＝画面下方向）を向くように180度回転！ */
+    .opp-discard-card {
+      transform: rotate(180deg);
+    }
+    .opp-discard-card:hover {
+      transform: rotate(180deg) translateY(-8px) scale(1.15) !important;
+      z-index: 50 !important;
+    }
+    /* 相手のカードの数字バッジは自分から読めるよう正位置に補正 */
+    .opp-discard-card .card-badge {
+      transform: rotate(180deg);
+      bottom: 2px;
+      right: 2px;
+      top: auto;
+      left: auto;
+    }
+
+    /* ★自分の捨て札：真ん中（テーブル中央＝画面上方向）を向く正位置 */
+    .my-discard-card {
+      transform: rotate(0deg);
+    }
+    .my-discard-card:hover {
+      transform: translateY(-8px) scale(1.15);
+      z-index: 50 !important;
     }
 
     /* 3. 中央テーブル */
@@ -250,7 +274,7 @@
     .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .zone-label { font-size: 9px; color: #9ca3af; }
 
-    /* カードデザイン */
+    /* カード本体 */
     .card {
       width: 78px;
       height: 116px;
@@ -497,12 +521,12 @@
         <!-- 1. 最上段：相手の情報バー -->
         <div class="opponents-bar" id="opponentsBar"></div>
 
-        <!-- 2. 相手の場（各相手の捨て札レーン） -->
+        <!-- 2. 相手の場（真ん中を向き、中央基準で展開） -->
         <div class="field-zone">
           <div class="field-players-container" id="oppFieldContainer"></div>
         </div>
 
-        <!-- 3. 中央テーブル（山札・転生札・ログ） -->
+        <!-- 3. 中央テーブル -->
         <div class="center-table">
           <div class="deck-zone">
             <div class="deck-wrapper">
@@ -521,10 +545,10 @@
           <div class="game-log-box" id="logBox"></div>
         </div>
 
-        <!-- 4. 自分の場（自分の捨て札レーン） -->
+        <!-- 4. 自分の場（真ん中を向き、中央基準で展開） -->
         <div class="field-zone">
           <div class="player-discard-lane">
-            <div class="lane-label">あなたの捨て札（場）</div>
+            <div class="lane-label">あなたの捨て札</div>
             <div class="lane-cards" id="myDiscardLane"></div>
           </div>
         </div>
@@ -603,7 +627,7 @@
             <div class="card-rule-item"><strong>【6】貴族 (対決):</strong> 相手1人と手札を見せ合い、数字の小さい方が脱落（同数は両者脱落）。</div>
             <div class="card-rule-item"><strong>【7】賢者 (選択):</strong> 次の自分の手番で山札から3枚引いて好きな1枚を選び、残りを山札へ戻す。</div>
             <div class="card-rule-item"><strong>【8】精霊 (交換):</strong> 相手1人と手札を交換する。</div>
-            <div class="card-rule-item"><strong>【9】皇帝 (公開処刑):</strong> 相手に1枚引かせ2枚とも公開。1枚処刑。※英雄は転生できず即脱落！</div>
+            <div class="card-rule-item"><strong>【9】皇帝 (公開処刑):</strong> 相手に引かせ2枚公開、1枚処刑。※英雄は転生できず即脱落！</div>
             <div class="card-rule-item"><strong>【10】英雄 (潜伏・転生):</strong> 出せない。皇帝以外で捨てられたら転生札で復活。</div>
           </section>
         </div>
@@ -689,7 +713,7 @@
       3: { rank: 3, name: "占師", count: 2, desc: "相手1人の手札を見る（自分だけに表示）。" },
       4: { rank: 4, name: "乙女", count: 2, desc: "次の自分の手番まで相手のカード効果を受けない。" },
       5: { rank: 5, name: "死神", count: 2, desc: "相手に1枚引かせシャッフル。使用者が裏向きの2枚から1枚選んで捨てさせる（英雄は転生）。" },
-      6: { rank: 6, name: "貴族", count: 2, desc: "相手1人と手札を見せ合い、数字の小さい方が脱落（同数は共倒れ）。" },
+      6: { rank: 6, name: "貴族", count: 2, desc: "相手1人と手札を見せ合い、数字の小さい方が脱落（同数は両者脱落）。" },
       7: { rank: 7, name: "賢者", count: 2, desc: "次の自分の手番で山札から3枚引いて好きな1枚を選び、残りを山札へ戻す。" },
       8: { rank: 8, name: "精霊", count: 2, desc: "相手1人と手札を交換する。" },
       9: { rank: 9, name: "皇帝", count: 1, desc: "相手に1枚引かせ2枚とも公開。1枚処刑する。※英雄を処刑した場合は転生不可で即脱落！" },
@@ -788,7 +812,7 @@
     /* ================= MQTT 通信 ================= */
     function connectMQTT(asHost, roomId) {
       isHost = asHost;
-      roomTopic = "xeno/v9/room_" + roomId;
+      roomTopic = "xeno/v10/room_" + roomId;
 
       mqttClient = mqtt.connect("wss://broker.emqx.io:8084/mqtt", {
         clientId: MY_ID,
@@ -879,7 +903,6 @@
       } else if (msg.type === "ACTION" && isHost) {
         processCardPlay(msg.playerId, msg.cardRank, msg.targetId, msg.extra);
 
-      // 【賢者選択要請】
       } else if (msg.type === "KENJA_SELECT_REQUEST" && msg.targetUserId === MY_ID) {
         showChoiceModal("【賢者：選択】", "手札に加える1枚を選択してください（残りは山札へ戻ります）", msg.cards, (selected) => {
           sendMsg({ type: "KENJA_SELECTED", playerId: MY_ID, chosenCard: selected });
@@ -888,7 +911,6 @@
       } else if (msg.type === "KENJA_SELECTED" && isHost) {
         applyKenjaChoice(msg.playerId, msg.chosenCard);
 
-      // 【死神選択要請：裏向きから選ぶ】
       } else if (msg.type === "REAPER_SELECT_REQUEST" && msg.executorId === MY_ID) {
         showReaperChoiceModal(msg.targetName, (chosenIndex) => {
           sendMsg({ type: "REAPER_CHOSEN", executorId: MY_ID, targetId: msg.targetId, chosenIndex: chosenIndex });
@@ -899,7 +921,6 @@
         const target = gameState.players.find(p => p.id === msg.targetId);
         applyReaperChoice(executor, target, msg.chosenIndex);
 
-      // 【公開処刑選択要請】
       } else if (msg.type === "EXECUTE_SELECT_REQUEST" && msg.executorId === MY_ID) {
         showChoiceModal("【公開処刑】捨てさせるカードを選択", `${msg.targetName} の手札から1枚選んでください`, msg.hand, (chosen) => {
           sendMsg({ type: "EXECUTE_CHOSEN", executorId: MY_ID, targetId: msg.targetId, chosenCard: chosen, isEmperor: msg.isEmperor });
@@ -986,7 +1007,6 @@
         return;
       }
 
-      // ★賢者の効果発動（3枚引いて選択）
       if (current.hasKenja) {
         current.hasKenja = false;
         const count = Math.min(3, gameState.deck.length);
@@ -1135,7 +1155,6 @@
           addLog(`${player.name} は聖なる守護を得た。`);
           break;
 
-        // ★【5: 死神】勝手に捨てず、裏向き2枚から手動選択
         case 5:
           target.hand.push(gameState.deck.pop());
           target.hand.sort(() => Math.random() - 0.5);
@@ -1179,7 +1198,6 @@
           }
           break;
 
-        // ★【7: 賢者】効果予約
         case 7:
           player.hasKenja = true;
           addLog(`🔮【賢者予約】${player.name} は賢者の選択を予約した。（次の自分の手番で3枚引いて選択）`);
@@ -1366,7 +1384,7 @@
       renderGame();
     }
 
-    /* ================= UI描画（完全再構築） ================= */
+    /* ================= UI描画（中央基準＆真ん中向き展開） ================= */
     function setCardImage(el, filename) {
       const primaryUrl = getAssetUrl(filename);
       const fallbackUrl = getAssetUrl("Images/" + filename);
@@ -1429,10 +1447,15 @@
       document.getElementById("myGuardBadge").classList.toggle("hidden", !me.isProtected);
       document.getElementById("myKenjaBadge").classList.toggle("hidden", !me.hasKenja);
 
-      // ★4. 自分の捨て札（場：重なり展開・スクロールなし）
+      // ★4. 自分の捨て札（中央基準で左右均等展開、頭は真ん中向き）
       const myDiscardLane = document.getElementById("myDiscardLane");
       myDiscardLane.innerHTML = "";
-      me.discards.forEach(c => myDiscardLane.appendChild(createCardElem(c, true)));
+      me.discards.forEach((c, idx) => {
+        const cardEl = createCardElem(c, true);
+        cardEl.classList.add("my-discard-card");
+        cardEl.style.zIndex = idx + 1;
+        myDiscardLane.appendChild(cardEl);
+      });
 
       // 5. 自分の手札
       const myHand = document.getElementById("myHand");
@@ -1460,7 +1483,7 @@
         myHand.appendChild(el);
       });
 
-      // ★1. 最上段：相手情報バー
+      // 1. 最上段：相手情報バー
       const oppBar = document.getElementById("opponentsBar");
       oppBar.innerHTML = "";
       opponents.forEach(opp => {
@@ -1477,7 +1500,7 @@
         oppBar.appendChild(box);
       });
 
-      // ★2. 相手の場（各相手の専用捨て札レーン）
+      // ★2. 相手の場（真ん中を向き、中央基準で左右均等展開）
       const oppFieldContainer = document.getElementById("oppFieldContainer");
       oppFieldContainer.innerHTML = "";
       opponents.forEach(opp => {
@@ -1485,7 +1508,13 @@
         lane.className = "player-discard-lane";
         lane.innerHTML = `<div class="lane-label">${opp.name} の捨て札</div><div class="lane-cards" id="lane-cards-${opp.id}"></div>`;
         const cardsBox = lane.querySelector(`#lane-cards-${opp.id}`);
-        opp.discards.forEach(c => cardsBox.appendChild(createCardElem(c, true)));
+        
+        opp.discards.forEach((c, idx) => {
+          const cardEl = createCardElem(c, true);
+          cardEl.classList.add("opp-discard-card");
+          cardEl.style.zIndex = idx + 1;
+          cardsBox.appendChild(cardEl);
+        });
         oppFieldContainer.appendChild(lane);
       });
     }
