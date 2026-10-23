@@ -100,8 +100,8 @@
       border: 1px solid var(--border);
       box-shadow: 0 20px 40px rgba(0,0,0,0.9), 0 0 20px rgba(212, 175, 55, 0.15);
       border-radius: 8px;
-      padding: 26px 22px;
-      max-width: 390px;
+      padding: 24px 22px;
+      max-width: 400px;
       width: 100%;
     }
     .title {
@@ -110,25 +110,25 @@
       font-size: 32px;
       font-weight: 900;
       letter-spacing: 8px;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
       background: linear-gradient(135deg, #ffffff 0%, var(--gold) 50%, var(--gold-dark) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
     .input-group { margin-bottom: 14px; }
-    .input-group label { display: block; font-size: 12px; color: #9ca3af; margin-bottom: 4px; font-weight: 700; }
+    .input-group label { display: block; font-size: 12px; color: #9ca3af; margin-bottom: 5px; font-weight: 700; }
     input[type="text"] {
       width: 100%;
-      padding: 10px 12px;
+      padding: 9px 12px;
       background: #090c10;
       border: 1px solid #374151;
       border-radius: 4px;
       color: #fff;
-      font-size: 15px;
+      font-size: 14px;
       font-family: 'Shippori Mincho', serif;
     }
-    .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+    .btn-row { display: flex; gap: 10px; margin-top: 14px; }
     .btn-row .btn { flex: 1; }
 
     .room-id-box {
@@ -194,7 +194,7 @@
       background: rgba(25, 30, 42, 0.95);
     }
     .opp-badge-box.eliminated { opacity: 0.25; filter: grayscale(1); }
-    .opp-name { font-size: 12px; font-weight: 700; color: #cbd5e0; }
+    .opp-name { font-size: 12px; font-weight: 700; color: #cbd5e0; display: flex; align-items: center; }
     .opp-cards { display: flex; gap: 3px; }
 
     /* 捨て札ゾーン */
@@ -276,7 +276,7 @@
       justify-content: space-between;
       padding: 6px;
       overflow: hidden;
-    }
+    }}
     .card:hover {
       transform: translateY(-8px) scale(1.05);
       box-shadow: 0 10px 20px rgba(212, 175, 55, 0.8);
@@ -496,6 +496,64 @@
       border-radius: 4px;
       border-left: 3px solid var(--gold);
     }
+
+    /* タブ切り替えUI */
+    .tab-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      background: #090c10;
+      padding: 4px;
+      border-radius: 6px;
+      border: 1px solid #374151;
+    }
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: 1px solid transparent;
+      color: #9ca3af;
+      font-family: 'Shippori Mincho', serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active {
+      background: rgba(212, 175, 55, 0.2);
+      border-color: var(--gold);
+      color: var(--gold-light);
+    }
+    .mode-section { display: none; }
+    .mode-section.active { display: block; }
+    
+    .btn-select-group {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+    .btn-select-group .btn {
+      flex: 1;
+      padding: 8px 4px;
+      font-size: 11px;
+    }
+    .btn-select-group .btn.active {
+      background: rgba(212, 175, 55, 0.25);
+      border-color: var(--gold);
+      color: var(--gold-light);
+      font-weight: 800;
+    }
+    .cpu-badge {
+      background: #0284c7;
+      color: #fff;
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 8px;
+      font-weight: 700;
+      margin-left: 4px;
+    }
   </style>
 </head>
 <body>
@@ -503,7 +561,7 @@
     <header class="header">
       <div class="logo" id="headerHomeBtn" title="ホームに戻る">XENO</div>
       <div class="header-actions">
-        <button id="endGameBtn" class="btn btn-danger hidden" title="試合を強制終了して待機部屋に戻る">🏳️ 中断</button>
+        <button id="endGameBtn" class="btn btn-danger hidden" title="試合を強制終了して待機部屋/ロビーに戻る">🏳️ 中断</button>
         <button id="soundToggleBtn" class="btn btn-secondary">🔊</button>
         <button id="ruleBtn" class="btn btn-secondary">📜 ルール</button>
       </div>
@@ -519,13 +577,49 @@
           <input type="text" id="playerNameInput" maxlength="10" placeholder="名前を入力">
         </div>
 
-        <div class="input-group">
-          <label>合言葉（ルームID）</label>
-          <input type="text" id="customRoomIdInput" placeholder="例: 1124" value="1124">
+        <!-- モード選択タブ -->
+        <div class="tab-row">
+          <button type="button" class="tab-btn active" id="tabAiBtn">🤖 AIと対戦</button>
+          <button type="button" class="tab-btn" id="tabOnlineBtn">🌐 マルチプレイ</button>
         </div>
 
-        <div class="btn-row">
-          <button id="createRoomBtn" class="btn btn-gold">部屋に入る</button>
+        <!-- AI対戦セクション -->
+        <div id="aiModeSection" class="mode-section active">
+          <div class="input-group">
+            <label>対戦人数</label>
+            <div class="btn-select-group" id="playerCountGroup">
+              <button type="button" class="btn btn-secondary active" data-count="2">2人 (タイマン)</button>
+              <button type="button" class="btn btn-secondary" data-count="3">3人</button>
+              <button type="button" class="btn btn-secondary" data-count="4">4人</button>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>CPU難易度</label>
+            <div class="btn-select-group" id="difficultyGroup">
+              <button type="button" class="btn btn-secondary active" data-diff="normal">ノーマル</button>
+              <button type="button" class="btn btn-secondary" data-diff="hard">手強い (Hard)</button>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button id="startAiBtn" class="btn btn-gold">AI対戦を開始する</button>
+          </div>
+        </div>
+
+        <!-- オンラインセクション -->
+        <div id="onlineModeSection" class="mode-section">
+          <div class="input-group">
+            <label>合言葉（ルームID）</label>
+            <input type="text" id="customRoomIdInput" placeholder="例: 1124" value="1124">
+          </div>
+
+          <div class="btn-row">
+            <button id="createRoomBtn" class="btn btn-gold">部屋に入る / 作成</button>
+          </div>
+          <p style="font-size:11px; color:#9ca3af; text-align:center; margin-top:10px;">
+            ※同じ合言葉を入力したプレイヤーと最大4人までリアルタイム通信対戦ができます。
+          </p>
         </div>
       </div>
     </div>
@@ -664,8 +758,12 @@
           ⏳ <span id="countdownSec">7</span> 秒後に待機部屋へ戻ります...
         </div>
 
-        <div class="btn-row" style="margin-top:10px;">
+        <div class="btn-row" id="gameOverOnlineRow" style="margin-top:10px;">
           <button id="returnToWaitingBtn" class="btn btn-gold">今すぐ待機部屋に戻る</button>
+        </div>
+        <div class="btn-row hidden" id="gameOverAiRow" style="margin-top:10px;">
+          <button id="rematchAiBtn" class="btn btn-gold">🎮 もう一度遊ぶ</button>
+          <button id="exitToLobbyBtn" class="btn btn-secondary">🏠 ロビーに戻る</button>
         </div>
       </div>
     </div>
@@ -788,6 +886,11 @@
     let isHost = false;
     let currentRoomId = "";
     
+    let gameMode = "ai"; // "ai" or "online"
+    let aiPlayerCount = 2; // 2, 3, 4
+    let aiDifficulty = "normal"; // "normal" or "hard"
+    let cpuTimerId = null;
+
     const MY_ID = "usr_" + Date.now().toString(36) + "_" + Math.random().toString(36).substr(2, 6);
     let myName = "プレイヤー1";
 
@@ -818,6 +921,17 @@
     const endGameBtn = document.getElementById("endGameBtn");
     const playerNameInput = document.getElementById("playerNameInput");
 
+    const tabAiBtn = document.getElementById("tabAiBtn");
+    const tabOnlineBtn = document.getElementById("tabOnlineBtn");
+    const aiModeSection = document.getElementById("aiModeSection");
+    const onlineModeSection = document.getElementById("onlineModeSection");
+    const startAiBtn = document.getElementById("startAiBtn");
+    const rematchAiBtn = document.getElementById("rematchAiBtn");
+    const exitToLobbyBtn = document.getElementById("exitToLobbyBtn");
+    const gameOverOnlineRow = document.getElementById("gameOverOnlineRow");
+    const gameOverAiRow = document.getElementById("gameOverAiRow");
+
+
     window.addEventListener("DOMContentLoaded", () => {
       document.body.addEventListener("click", () => sounds.init(), { once: true });
 
@@ -836,6 +950,45 @@
         }
       });
 
+      // タブ切り替え
+      tabAiBtn.onclick = () => {
+        tabAiBtn.classList.add("active");
+        tabOnlineBtn.classList.remove("active");
+        aiModeSection.classList.add("active");
+        onlineModeSection.classList.remove("active");
+      };
+      tabOnlineBtn.onclick = () => {
+        tabOnlineBtn.classList.add("active");
+        tabAiBtn.classList.remove("active");
+        onlineModeSection.classList.add("active");
+        aiModeSection.classList.remove("active");
+      };
+
+      // 人数ボタングループ
+      document.getElementById("playerCountGroup").querySelectorAll("button").forEach(btn => {
+        btn.onclick = () => {
+          document.getElementById("playerCountGroup").querySelectorAll("button").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          aiPlayerCount = parseInt(btn.getAttribute("data-count"), 10);
+        };
+      });
+
+      // 難易度ボタングループ
+      document.getElementById("difficultyGroup").querySelectorAll("button").forEach(btn => {
+        btn.onclick = () => {
+          document.getElementById("difficultyGroup").querySelectorAll("button").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          aiDifficulty = btn.getAttribute("data-diff");
+        };
+      });
+
+      startAiBtn.onclick = () => startAiGame();
+      rematchAiBtn.onclick = () => {
+        gameOverModal.classList.add("hidden");
+        startAiGame();
+      };
+      exitToLobbyBtn.onclick = () => leaveToHome();
+
       document.getElementById("soundToggleBtn").onclick = () => {
         sounds.enabled = !sounds.enabled;
         document.getElementById("soundToggleBtn").innerText = sounds.enabled ? "🔊" : "🔇";
@@ -848,6 +1001,8 @@
       const urlParams = new URLSearchParams(window.location.search);
       const roomParam = urlParams.get('room');
       if (roomParam) {
+        // 招待リンクで来たら自動でオンラインタブをアクティブに
+        tabOnlineBtn.click();
         document.getElementById("customRoomIdInput").value = roomParam;
         if (!savedName) {
           playerNameInput.value = "プレイヤー2";
@@ -861,7 +1016,11 @@
       document.getElementById("leaveRoomBtn").onclick = () => leaveToHome();
 
       endGameBtn.onclick = () => {
-        if (confirm("試合を強制終了して待機部屋に戻りますか？")) forceEndMatch();
+        if (gameMode === "ai") {
+          if (confirm("AI対戦を中断してロビーに戻りますか？")) leaveToHome();
+        } else {
+          if (confirm("試合を強制終了して待機部屋に戻りますか？")) forceEndMatch();
+        }
       };
 
       document.getElementById("ruleBtn").onclick = () => ruleModal.classList.remove("hidden");
@@ -884,6 +1043,7 @@
       document.getElementById("returnToWaitingBtn").onclick = () => returnToWaitingRoom();
     });
 
+
     function testAndSetImage(el, filename) {
       if (!el) return;
       const url = getAssetUrl(filename);
@@ -895,16 +1055,18 @@
     function leaveToHome() {
       if (autoReturnTimerId) clearInterval(autoReturnTimerId);
       if (heartbeatTimerId) clearInterval(heartbeatTimerId);
+      if (cpuTimerId) clearTimeout(cpuTimerId);
 
       if (mqttClient) {
         try {
-          if (isHost) {
+          if (isHost && gameMode === "online") {
             sendMsg({ type: "HOST_LEFT", hostId: MY_ID });
-          } else {
+          } else if (gameMode === "online") {
             sendMsg({ type: "PLAYER_LEFT", id: MY_ID, name: myName });
           }
           mqttClient.end(true);
         } catch(e){}
+        mqttClient = null;
       }
 
       isHost = false;
@@ -941,13 +1103,14 @@
       }
     }
 
-    /* ================= 通信（HiveMQ） ================= */
+    /* ================= 通信（HiveMQ / マルチプレイ） ================= */
     function enterRoom() {
       const customId = document.getElementById("customRoomIdInput").value.trim();
       if (!customId) return alert("合言葉を入力してください");
       myName = playerNameInput.value.trim() || "プレイヤー1";
       localStorage.setItem("xeno_player_name", myName);
       currentRoomId = customId;
+      gameMode = "online";
 
       document.getElementById("displayRoomId").innerText = customId;
       lobbyScreen.classList.add("hidden");
@@ -993,7 +1156,7 @@
     function startHeartbeat() {
       if (heartbeatTimerId) clearInterval(heartbeatTimerId);
       heartbeatTimerId = setInterval(() => {
-        if (gameState.phase === "init") {
+        if (gameState.phase === "init" && gameMode === "online") {
           sendPresence();
         } else {
           clearInterval(heartbeatTimerId);
@@ -1143,8 +1306,15 @@
     }
 
     function broadcastState() {
-      if (isHost) {
-        sendMsg({ type: "SYNC", state: gameState }, true);
+      if (gameMode === "online") {
+        if (isHost) {
+          sendMsg({ type: "SYNC", state: gameState }, true);
+        }
+      } else {
+        // AIモード：ローカルで即時反映・AI行動チェック
+        renderGame();
+        handlePhaseModals();
+        checkCpuAction();
       }
     }
 
@@ -1194,10 +1364,70 @@
       }
     }
 
+
+    /* ================= AI対戦モード初期化 ================= */
+    function startAiGame() {
+      if (autoReturnTimerId) clearInterval(autoReturnTimerId);
+      if (heartbeatTimerId) clearInterval(heartbeatTimerId);
+      if (cpuTimerId) clearTimeout(cpuTimerId);
+
+      gameMode = "ai";
+      isHost = true;
+      currentRoomId = "AI_LOCAL";
+
+      if (mqttClient) {
+        try { mqttClient.end(true); } catch(e){}
+        mqttClient = null;
+      }
+
+      myName = playerNameInput.value.trim() || "プレイヤー1";
+      localStorage.setItem("xeno_player_name", myName);
+
+      const players = [
+        {
+          id: MY_ID,
+          name: myName,
+          isCpu: false,
+          hand: [],
+          discards: [],
+          isProtected: false,
+          hasKenja: false,
+          isEliminated: false
+        }
+      ];
+
+      const cpuNames = ["CPU アリス", "CPU ボブ", "CPU シャルル"];
+      for (let i = 0; i < aiPlayerCount - 1; i++) {
+        players.push({
+          id: "cpu_" + (i + 1),
+          name: cpuNames[i],
+          isCpu: true,
+          hand: [],
+          discards: [],
+          isProtected: false,
+          hasKenja: false,
+          isEliminated: false,
+          memory: {}
+        });
+      }
+
+      gameState.players = players;
+      gameState.hostId = MY_ID;
+
+      lobbyScreen.classList.add("hidden");
+      waitingScreen.classList.add("hidden");
+      gameScreen.classList.remove("hidden");
+      endGameBtn.classList.remove("hidden");
+      gameOverModal.classList.add("hidden");
+
+      initNewDeckAndDeal();
+    }
+
     /* ================= ゲーム進行ロジック ================= */
     function initNewDeckAndDeal() {
       if (autoReturnTimerId) clearInterval(autoReturnTimerId);
       if (heartbeatTimerId) clearInterval(heartbeatTimerId);
+      if (cpuTimerId) clearTimeout(cpuTimerId);
 
       let deck = [];
       for (let rank = 1; rank <= 10; rank++) {
@@ -1215,11 +1445,12 @@
         p.isProtected = false;
         p.hasKenja = false;
         p.isEliminated = false;
+        if (p.isCpu) p.memory = {};
       });
 
       gameState.deck = deck;
       gameState.discardsAll = [];
-      gameState.logs = ["ゲーム開始。1枚が転生札として除外されました。"];
+      gameState.logs = [gameMode === "ai" ? `AI対戦開始（${gameState.players.length}人戦 / 難易度:${aiDifficulty === "hard" ? "手強い" : "ノーマル"}）。1枚が転生札として除外されました。` : "ゲーム開始。1枚が転生札として除外されました。"];
       gameState.turnIndex = 0;
       gameState.phase = "action";
       gameState.pendingAction = null;
@@ -1337,6 +1568,14 @@
       return count;
     }
 
+    function clearCpuMemoryOf(playerId) {
+      (gameState.players || []).forEach(p => {
+        if (p.isCpu && p.memory && p.memory[playerId]) {
+          delete p.memory[playerId];
+        }
+      });
+    }
+
     function requestPlayCard(cardRank) {
       const current = getCurrentPlayer();
       if (current.id !== MY_ID) return;
@@ -1387,6 +1626,9 @@
     function processCardPlay(playerId, cardRank, targetId, extra) {
       const player = gameState.players.find(p => p.id === playerId);
       const target = gameState.players.find(p => p.id === targetId);
+
+      // 手札がプレイされたため、全CPUのそのプレイヤーに関する記憶をリセット
+      clearCpuMemoryOf(playerId);
 
       const alreadyBoyCount = countDiscards(1);
       const isSecondBoy = (cardRank === 1 && alreadyBoyCount >= 1);
@@ -1448,13 +1690,17 @@
           addLog(`${player.name} は ${target.name} の手札を透視した。`);
           if (player.id === MY_ID) {
             showClairvoyanceModal(target.name, target.hand);
-          } else {
+          } else if (gameMode === "online") {
             sendMsg({
               type: "PRIVATE_REVEAL",
               targetUserId: player.id,
               targetName: target.name,
               cards: target.hand
             });
+          }
+          if (player.isCpu) {
+            if (!player.memory) player.memory = {};
+            player.memory[target.id] = target.hand[0];
           }
           break;
 
@@ -1492,13 +1738,15 @@
           };
           broadcastState();
 
-          sendMsg({
-            type: "DUEL_SHOW",
-            player1Id: player.id, player1Name: player.name, card1: pVal,
-            player2Id: target.id, player2Name: target.name, card2: tVal
-          });
+          if (gameMode === "online") {
+            sendMsg({
+              type: "DUEL_SHOW",
+              player1Id: player.id, player1Name: player.name, card1: pVal,
+              player2Id: target.id, player2Name: target.name, card2: tVal
+            });
+          }
 
-          if (player.id === MY_ID || target.id === MY_ID) {
+          if (player.id === MY_ID || target.id === MY_ID || gameMode === "ai") {
             showDuelModal({
               player1Name: player.name, card1: pVal,
               player2Name: target.name, card2: tVal
@@ -1544,13 +1792,21 @@
           // 交換通知
           if (target.id === MY_ID) {
             showSwapReceivedModal(player.name, tempP[0]);
-          } else {
+          } else if (gameMode === "online") {
             sendMsg({
               type: "SWAP_NOTIFY",
               targetUserId: target.id,
               senderName: player.name,
               card: tempP[0]
             });
+          }
+          if (player.isCpu) {
+            if (!player.memory) player.memory = {};
+            player.memory[target.id] = tempP[0];
+          }
+          if (target.isCpu) {
+            if (!target.memory) target.memory = {};
+            target.memory[player.id] = tempT[0];
           }
           break;
 
@@ -1566,6 +1822,8 @@
       const executor = gameState.players.find(p => p.id === executorId);
       const target = gameState.players.find(p => p.id === targetId);
       if (!executor || !target) return;
+
+      clearCpuMemoryOf(targetId);
 
       const discarded = target.hand.splice(chosenIndex, 1)[0];
       target.discards.push(discarded);
@@ -1606,6 +1864,8 @@
       const target = gameState.players.find(p => p.id === targetId);
       if (!executor || !target) return;
 
+      clearCpuMemoryOf(targetId);
+
       const idx = target.hand.indexOf(chosenCard);
       if (idx !== -1) target.hand.splice(idx, 1);
       target.discards.push(chosenCard);
@@ -1638,8 +1898,8 @@
       return false;
     }
 
-    // ★公式ルール修正：転生しても賢者効果（hasKenja）は消滅しない！
     function executeReborn(player) {
+      clearCpuMemoryOf(player.id);
       while (player.hand.length > 0) {
         const c = player.hand.pop();
         player.discards.push(c);
@@ -1659,6 +1919,7 @@
     function eliminatePlayer(player) {
       player.isEliminated = true;
       player.hasKenja = false;
+      clearCpuMemoryOf(player.id);
       while (player.hand.length > 0) {
         const c = player.hand.pop();
         player.discards.push(c);
@@ -1666,7 +1927,6 @@
       }
     }
 
-    // ★手番終了時：公式ルール準拠（山札0なら即終了）
     function finishAction() {
       broadcastState();
       
@@ -1715,7 +1975,6 @@
       broadcastState();
     }
 
-    // ★全員の手札開示レンダラー
     function renderFinalHandsList() {
       const container = document.getElementById("finalHandsList");
       container.innerHTML = "";
@@ -1747,18 +2006,31 @@
       duelModal.classList.add("hidden");
       clairvoyanceModal.classList.add("hidden");
       swapNoticeModal.classList.add("hidden");
-      let count = 7;
-      document.getElementById("countdownSec").innerText = count;
 
-      if (autoReturnTimerId) clearInterval(autoReturnTimerId);
-      autoReturnTimerId = setInterval(() => {
-        count--;
+      if (gameMode === "online") {
+        document.getElementById("autoReturnTimer").classList.remove("hidden");
+        gameOverOnlineRow.classList.remove("hidden");
+        gameOverAiRow.classList.add("hidden");
+
+        let count = 7;
         document.getElementById("countdownSec").innerText = count;
-        if (count <= 0) {
-          clearInterval(autoReturnTimerId);
-          if (isHost) returnToWaitingRoom();
-        }
-      }, 1000);
+
+        if (autoReturnTimerId) clearInterval(autoReturnTimerId);
+        autoReturnTimerId = setInterval(() => {
+          count--;
+          document.getElementById("countdownSec").innerText = count;
+          if (count <= 0) {
+            clearInterval(autoReturnTimerId);
+            if (isHost) returnToWaitingRoom();
+          }
+        }, 1000);
+      } else {
+        // AIモード
+        if (autoReturnTimerId) clearInterval(autoReturnTimerId);
+        document.getElementById("autoReturnTimer").classList.add("hidden");
+        gameOverOnlineRow.classList.add("hidden");
+        gameOverAiRow.classList.remove("hidden");
+      }
     }
 
     function returnToWaitingRoom() {
@@ -1791,6 +2063,310 @@
       startHeartbeat();
     }
 
+
+    /* ================= CPU（AI）思考エンジン ================= */
+    function checkCpuAction() {
+      if (gameMode !== "ai") return;
+      if (cpuTimerId) clearTimeout(cpuTimerId);
+
+      const current = getCurrentPlayer();
+
+      // ① CPUの通常手番
+      if (gameState.phase === "action" && current.isCpu && !current.isEliminated) {
+        cpuTimerId = setTimeout(() => {
+          executeCpuTurn(current);
+        }, 900);
+        return;
+      }
+
+      // ② CPUの賢者選択
+      if (gameState.phase === "kenja_select") {
+        const p = gameState.pendingAction;
+        if (p && p.userId) {
+          const actor = gameState.players.find(pl => pl.id === p.userId);
+          if (actor && actor.isCpu) {
+            cpuTimerId = setTimeout(() => {
+              executeCpuKenja(actor);
+            }, 1000);
+            return;
+          }
+        }
+      }
+
+      // ③ CPUの死神選択
+      if (gameState.phase === "reaper_select") {
+        const p = gameState.pendingAction;
+        if (p && p.executorId) {
+          const actor = gameState.players.find(pl => pl.id === p.executorId);
+          if (actor && actor.isCpu) {
+            cpuTimerId = setTimeout(() => {
+              executeCpuReaper(actor);
+            }, 1100);
+            return;
+          }
+        }
+      }
+
+      // ④ CPUの処刑選択
+      if (gameState.phase === "execute_select") {
+        const p = gameState.pendingAction;
+        if (p && p.executorId) {
+          const actor = gameState.players.find(pl => pl.id === p.executorId);
+          if (actor && actor.isCpu) {
+            cpuTimerId = setTimeout(() => {
+              executeCpuExecution(actor);
+            }, 1200);
+            return;
+          }
+        }
+      }
+    }
+
+    function executeCpuTurn(cpu) {
+      if (cpu.hand.length === 0) return;
+
+      // 手札が1枚だけの場合（引けなかった場合など）
+      if (cpu.hand.length === 1) {
+        const card = cpu.hand[0];
+        if (card === 10) return; // 英雄は出せない
+        playCpuCard(cpu, card, null);
+        return;
+      }
+
+      const c1 = cpu.hand[0];
+      const c2 = cpu.hand[1];
+
+      let chosenCard;
+      let otherCard;
+
+      if (c1 === 10) {
+        chosenCard = c2;
+        otherCard = c1;
+      } else if (c2 === 10) {
+        chosenCard = c1;
+        otherCard = c2;
+      } else {
+        const score1 = evaluateCpuCard(cpu, c1, c2);
+        const score2 = evaluateCpuCard(cpu, c2, c1);
+        if (score1 >= score2) {
+          chosenCard = c1;
+          otherCard = c2;
+        } else {
+          chosenCard = c2;
+          otherCard = c1;
+        }
+      }
+
+      playCpuCard(cpu, chosenCard, otherCard);
+    }
+
+    function playCpuCard(cpu, chosenCard, otherCard) {
+      sounds.playPlayCard();
+
+      const needTarget = [1, 2, 3, 5, 6, 8, 9];
+      const alreadyBoyInField = (countDiscards(1) >= 1);
+      const isSecondBoy = (chosenCard === 1 && alreadyBoyInField);
+
+      if (needTarget.includes(chosenCard) && (chosenCard !== 1 || isSecondBoy)) {
+        const target = selectCpuTarget(cpu, chosenCard);
+        if (!target) {
+          processCardPlay(cpu.id, chosenCard, null, null);
+          return;
+        }
+
+        let extra = null;
+        if (chosenCard === 2) {
+          const guessRank = guessCpuRank(cpu, target);
+          extra = { guessRank };
+        }
+
+        processCardPlay(cpu.id, chosenCard, target.id, extra);
+      } else {
+        processCardPlay(cpu.id, chosenCard, null, null);
+      }
+    }
+
+    function evaluateCpuCard(cpu, cardRank, otherCard) {
+      if (cardRank === 10) return -999;
+      let score = 50;
+
+      const alreadyBoys = countDiscards(1);
+      const isSecondBoy = (alreadyBoys >= 1);
+      const enemies = gameState.players.filter(p => p.id !== cpu.id && !p.isEliminated);
+      const unprotected = enemies.filter(p => !p.isProtected);
+
+      switch (cardRank) {
+        case 1: // 少年
+          score = isSecondBoy ? 92 : 45;
+          break;
+
+        case 2: // 兵士
+          let hasKnown = false;
+          unprotected.forEach(e => {
+            if (cpu.memory && cpu.memory[e.id]) hasKnown = true;
+          });
+          score = hasKnown ? 180 : 60;
+          break;
+
+        case 3: // 占師
+          const unknown = unprotected.filter(e => !(cpu.memory && cpu.memory[e.id]));
+          score = unknown.length > 0 ? 68 : 30;
+          break;
+
+        case 4: // 乙女
+          if (otherCard >= 9) score = 85;
+          else if (otherCard >= 7) score = 75;
+          else score = 65;
+          break;
+
+        case 5: // 死神
+          score = gameState.deck.length > 0 ? 72 : 15;
+          break;
+
+        case 6: // 貴族
+          if (otherCard >= 9) score = 110;
+          else if (otherCard === 8) score = 90;
+          else if (otherCard === 7) score = 70;
+          else if (otherCard <= 5) score = 5;
+          else score = 40;
+          break;
+
+        case 7: // 賢者
+          score = gameState.deck.length >= 2 ? 80 : 35;
+          break;
+
+        case 8: // 精霊
+          if (otherCard <= 3) score = 88;
+          else if (otherCard <= 5) score = 60;
+          else score = 15;
+          break;
+
+        case 9: // 皇帝
+          score = gameState.deck.length > 0 ? 95 : 15;
+          break;
+      }
+
+      if (aiDifficulty === "normal") {
+        score += (Math.random() * 16 - 8);
+      }
+
+      return score;
+    }
+
+    function selectCpuTarget(cpu, cardRank) {
+      const enemies = gameState.players.filter(p => p.id !== cpu.id && !p.isEliminated);
+      if (enemies.length === 0) return null;
+
+      const unprotected = enemies.filter(p => !p.isProtected);
+      const pool = unprotected.length > 0 ? unprotected : enemies;
+
+      // 兵士（2）で記憶がある相手を最優先
+      if (cardRank === 2) {
+        const known = pool.find(p => cpu.memory && cpu.memory[p.id]);
+        if (known) return known;
+      }
+
+      // 占師（3）なら手札未確認の相手を優先
+      if (cardRank === 3) {
+        const unknown = pool.find(p => !(cpu.memory && cpu.memory[p.id]));
+        if (unknown) return unknown;
+      }
+
+      // 人間プレイヤーを少し優先
+      const human = pool.find(p => !p.isCpu);
+      if (human && Math.random() < 0.6) return human;
+
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function guessCpuRank(cpu, target) {
+      // 記憶にある場合
+      if (cpu.memory && cpu.memory[target.id]) {
+        return cpu.memory[target.id];
+      }
+
+      // 残りカードプール推計
+      const remainingCounts = {};
+      for (let r = 1; r <= 10; r++) remainingCounts[r] = CARDS[r].count;
+      (gameState.discardsAll || []).forEach(r => {
+        if (remainingCounts[r] > 0) remainingCounts[r]--;
+      });
+      (cpu.hand || []).forEach(r => {
+        if (remainingCounts[r] > 0) remainingCounts[r]--;
+      });
+
+      const availableRanks = [];
+      for (let r = 1; r <= 10; r++) {
+        for (let c = 0; c < remainingCounts[r]; c++) {
+          availableRanks.push(r);
+        }
+      }
+
+      if (availableRanks.length === 0) {
+        return Math.floor(Math.random() * 10) + 1;
+      }
+
+      if (aiDifficulty === "hard") {
+        const rankFreq = {};
+        availableRanks.forEach(r => { rankFreq[r] = (rankFreq[r] || 0) + 1; });
+        let bestR = availableRanks[0], maxF = 0;
+        for (const r in rankFreq) {
+          if (rankFreq[r] > maxF) {
+            maxF = rankFreq[r];
+            bestR = Number(r);
+          }
+        }
+        return bestR;
+      }
+
+      return availableRanks[Math.floor(Math.random() * availableRanks.length)];
+    }
+
+    function executeCpuKenja(cpu) {
+      const p = gameState.pendingAction;
+      if (!p || !p.drawnCards) return;
+      const drawn = p.drawnCards;
+
+      // 優先度：10, 9, 4, 7, 6, 5, 2, 8, 1, 3
+      const priority = [10, 9, 4, 7, 6, 5, 2, 8, 1, 3];
+      drawn.sort((a, b) => priority.indexOf(a) - priority.indexOf(b));
+      const chosen = drawn[0];
+
+      applyKenjaChoice(cpu.id, chosen);
+    }
+
+    function executeCpuReaper(cpu) {
+      const p = gameState.pendingAction;
+      if (!p) return;
+      const chosenIndex = Math.random() < 0.5 ? 0 : 1;
+      applyReaperChoice(cpu.id, p.targetId, chosenIndex);
+    }
+
+    function executeCpuExecution(cpu) {
+      const p = gameState.pendingAction;
+      if (!p || !p.targetHand) return;
+      const cards = p.targetHand;
+
+      let chosen;
+      if (p.isEmperor) {
+        if (cards.includes(10)) {
+          chosen = 10;
+        } else {
+          chosen = Math.max(...cards);
+        }
+      } else {
+        // 少年（革命）：英雄は転生するので英雄以外を優先
+        if (cards.includes(10) && cards.some(c => c !== 10)) {
+          chosen = cards.find(c => c !== 10);
+        } else {
+          chosen = Math.max(...cards);
+        }
+      }
+
+      applyExecutionChoice(cpu.id, p.targetId, chosen, p.isEmperor);
+    }
+
+
     /* ================= 待機モーダルハンドラ ================= */
     function handlePhaseModals() {
       if (gameState.phase === "kenja_select") {
@@ -1814,7 +2390,6 @@
             else sendMsg({ type: "REAPER_CHOSEN", executorId: MY_ID, targetId: p.targetId, chosenIndex });
           });
         } else if (p.targetId === MY_ID) {
-          // 死神を受けた側は、手札が見える状態で通知表示
           showWaitingNoticeModal("死神：疫病", `${p.executorName} があなたの2枚の手札から捨てるカードを選んでいます...`);
         } else {
           showWaitingNoticeModal("死神：疫病", `${p.executorName} が ${p.targetName} の捨てるカードを選んでいます...`);
@@ -1832,11 +2407,10 @@
           showPublicExecutionWatchModal(p.targetName, p.targetHand, p.executorName);
         }
       }
-      // 貴族の第3者待機表示
       else if (gameState.phase === "duel_show") {
         const p = gameState.pendingAction;
         if (p && !duelModal.classList.contains("hidden")) {
-          // 当事者はduelModal表示中
+          // 当事者はモーダル表示中
         } else if (p) {
           showWaitingNoticeModal("貴族の決闘", `${p.p1Name} と ${p.p2Name} が密かに対決を行っています...`);
         }
@@ -1891,7 +2465,7 @@
         statusBadge.innerText = "あなたの手番！";
         statusBadge.className = "player-badge active-turn";
       } else {
-        statusBadge.innerText = "待機中";
+        statusBadge.innerText = currentP.isCpu ? `${currentP.name} 思考中...` : "待機中";
         statusBadge.className = "player-badge";
       }
       document.getElementById("myGuardBadge").classList.toggle("hidden", !me.isProtected);
@@ -1931,8 +2505,9 @@
         box.className = `opp-badge-box ${opp.isEliminated ? "eliminated" : ""} ${isOppTurn ? "active-turn" : ""}`;
         
         const handCount = (opp.hand ? opp.hand.length : 0);
+        const cpuTag = opp.isCpu ? `<span class="cpu-badge">AI</span>` : "";
         box.innerHTML = `
-          <span class="opp-name">${opp.name || "対戦相手"} ${opp.isProtected ? "🛡️" : ""} ${opp.hasKenja ? "🔮" : ""} ${isOppTurn ? "★" : ""}</span>
+          <span class="opp-name">${opp.name || "対戦相手"}${cpuTag} ${opp.isProtected ? "🛡️" : ""} ${opp.hasKenja ? "🔮" : ""} ${isOppTurn ? "★" : ""}</span>
           <div class="opp-cards">
             ${Array.from({ length: handCount }).map(() => `<div class="card-mini card-back" style="width:20px; height:30px;"></div>`).join("")}
           </div>
@@ -1946,7 +2521,8 @@
       opponents.forEach(opp => {
         const lane = document.createElement("div");
         lane.className = "player-discard-lane";
-        lane.innerHTML = `<div class="lane-label">${opp.name || "相手"} の捨て札</div><div class="lane-cards" id="lane-cards-${opp.id}"></div>`;
+        const cpuLabel = opp.isCpu ? " (AI)" : "";
+        lane.innerHTML = `<div class="lane-label">${opp.name || "相手"}${cpuLabel} の捨て札</div><div class="lane-cards" id="lane-cards-${opp.id}"></div>`;
         const cardsBox = lane.querySelector(`#lane-cards-${opp.id}`);
         
         (opp.discards || []).forEach((c, idx) => {
