@@ -163,10 +163,10 @@
       background-size: cover;
       background-position: center;
       display: grid;
-      grid-template-rows: auto 1fr auto 1fr auto;
-      padding: 6px 10px;
+      grid-template-rows: auto auto 1fr auto auto;
+      padding: 4px 10px;
       position: relative;
-      gap: 4px;
+      gap: 3px;
     }
 
     /* 相手情報バー */
@@ -174,7 +174,7 @@
       display: flex;
       justify-content: center;
       gap: 8px;
-      min-height: 44px;
+      min-height: 40px;
       align-items: center;
       flex-wrap: wrap;
     }
@@ -197,6 +197,63 @@
     .opp-name { font-size: 12px; font-weight: 700; color: #cbd5e0; display: flex; align-items: center; }
     .opp-cards { display: flex; gap: 3px; }
 
+    /* 推理アシスト：残りカードカウンターバー */
+    .card-tracker-bar {
+      background: rgba(10, 14, 20, 0.92);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 6px;
+      padding: 4px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .tracker-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: 1px;
+      white-space: nowrap;
+      margin-right: 6px;
+    }
+    .tracker-items {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+      justify-content: space-around;
+    }
+    .tracker-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.04);
+      min-width: 32px;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: all 0.2s;
+    }
+    .tracker-item.exhausted {
+      opacity: 0.22;
+      filter: grayscale(1);
+      border-color: transparent;
+    }
+    .tracker-rank {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--gold-light);
+      line-height: 1;
+    }
+    .tracker-count {
+      font-size: 9px;
+      font-weight: 700;
+      color: #9ca3af;
+      line-height: 1.2;
+    }
+
     /* 捨て札ゾーン */
     .field-zone {
       display: flex;
@@ -204,7 +261,7 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      min-height: 58px;
+      min-height: 52px;
     }
     .field-players-container {
       display: flex;
@@ -251,7 +308,7 @@
       justify-content: center;
       align-items: center;
       gap: 16px;
-      min-height: 84px;
+      min-height: 76px;
     }
     .deck-zone { display: flex; align-items: center; gap: 12px; }
     .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 2px; }
@@ -260,7 +317,7 @@
     /* カード本体 */
     .card {
       width: 78px;
-      height: 116px;
+      height: 114px;
       border-radius: 6px;
       position: relative;
       background-size: cover;
@@ -276,7 +333,7 @@
       justify-content: space-between;
       padding: 6px;
       overflow: hidden;
-    }}
+    }
     .card:hover {
       transform: translateY(-8px) scale(1.05);
       box-shadow: 0 10px 20px rgba(212, 175, 55, 0.8);
@@ -290,8 +347,8 @@
     }
 
     .card-mini {
-      width: 40px;
-      height: 58px;
+      width: 38px;
+      height: 56px;
       border-radius: 4px;
       border: 1px solid #5a4b26;
       background-size: cover;
@@ -322,8 +379,8 @@
     }
 
     .deck-card {
-      width: 68px;
-      height: 100px;
+      width: 64px;
+      height: 94px;
       border-radius: 5px;
       background-size: cover;
       background-position: center center;
@@ -347,8 +404,8 @@
       z-index: 2;
     }
     .reborn-card {
-      width: 68px;
-      height: 100px;
+      width: 64px;
+      height: 94px;
       border-radius: 5px;
       background-size: cover;
       background-position: center center;
@@ -360,7 +417,7 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.8);
       overflow: hidden;
     }
-    .horizontal { transform: rotate(90deg); margin: 10px 0; }
+    .horizontal { transform: rotate(90deg); margin: 8px 0; }
     .reborn-text {
       background: rgba(0, 0, 0, 0.85);
       padding: 2px 5px;
@@ -373,7 +430,7 @@
 
     .game-log-box {
       width: 220px;
-      height: 76px;
+      height: 72px;
       background: rgba(8, 10, 14, 0.92);
       border: 1px solid #374151;
       border-radius: 6px;
@@ -414,7 +471,7 @@
       display: flex;
       gap: 14px;
       justify-content: center;
-      min-height: 118px;
+      min-height: 116px;
       align-items: flex-end;
     }
 
@@ -657,6 +714,12 @@
       <div class="playmat" id="playmat">
         <div class="opponents-bar" id="opponentsBar"></div>
 
+        <!-- 推理アシスト：残りカードカウンター -->
+        <div class="card-tracker-bar" id="cardTrackerBar">
+          <span class="tracker-title">未公開札</span>
+          <div class="tracker-items" id="trackerItems"></div>
+        </div>
+
         <div class="field-zone">
           <div class="field-players-container" id="oppFieldContainer"></div>
         </div>
@@ -781,14 +844,14 @@
           <section>
             <h3>■ カード効果（RANK 1 〜 10）</h3>
             <div class="card-rule-item"><strong>【1】少年 (革命):</strong> 1枚目は効果なし。場に2枚目が出た時、相手1人を公開処刑する（英雄は転生可）。</div>
-            <div class="card-rule-item"><strong>【2】兵士 (捜査):</strong> 相手1人とカード名を宣言。的中なら脱落（英雄は転生）。</div>
+            <div class="card-rule-item"><strong>【2】兵士 (捜査):</strong> 相手1人とカード名を宣言。的中なら脱落（英雄は転生）。※兵士(2)自身も宣言可！</div>
             <div class="card-rule-item"><strong>【3】占師 (透視):</strong> 相手1人の手札を見る。</div>
             <div class="card-rule-item"><strong>【4】乙女 (守護):</strong> 次の自分の手番まで相手のカード効果を受けない。</div>
             <div class="card-rule-item"><strong>【5】死神 (疫病):</strong> 相手に1枚引かせシャッフル。使用者が裏向きの2枚から1枚選んで捨てさせる（英雄は転生）。</div>
             <div class="card-rule-item"><strong>【6】貴族 (対決):</strong> 相手1人と手札を見せ合い、数字の小さい方が脱落（同数は両者脱落）。</div>
             <div class="card-rule-item"><strong>【7】賢者 (選択):</strong> 次の自分の手番で山札から3枚引いて好きな1枚を選び、残りを山札へ戻す。※効果発動後に転生しても次回発動可能！</div>
             <div class="card-rule-item"><strong>【8】精霊 (交換):</strong> 相手1人と手札を交換する。</div>
-            <div class="card-rule-item"><strong>【9】皇帝 (公開処刑):</strong> 相手に1枚引かせ2枚とも公開。1枚処刑。※英雄は転生できず即脱落！</div>
+            <div class="card-rule-item"><strong>【9】皇帝 (公開処刑):</strong> 相手に1枚引かせ2枚とも公開。1枚処刑。※英雄を処刑した場合は転生不可で即脱落！</div>
             <div class="card-rule-item"><strong>【10】英雄 (潜伏・転生):</strong> 出せない。皇帝以外で捨てられたら転生札で復活。</div>
           </section>
         </div>
@@ -870,7 +933,7 @@
 
     const CARDS = {
       1: { rank: 1, name: "少年", count: 2, sub: "革命", desc: "1枚目は効果なし。場に2枚目が出た時、相手1人を公開処刑する（英雄は転生可）。" },
-      2: { rank: 2, name: "兵士", count: 2, sub: "捜査", desc: "相手1人とカード名を宣言。的中すればその相手は脱落（英雄は転生）。" },
+      2: { rank: 2, name: "兵士", count: 2, sub: "捜査", desc: "相手1人とカード名を宣言。的中すればその相手は脱落（英雄は転生）。※兵士(2)自身も宣言可！" },
       3: { rank: 3, name: "占師", count: 2, sub: "透視", desc: "相手1人の手札を見る（自分だけに表示）。" },
       4: { rank: 4, name: "乙女", count: 2, sub: "守護", desc: "次の自分の手番まで相手のカード効果を受けない。" },
       5: { rank: 5, name: "死神", count: 2, sub: "疫病", desc: "相手に1枚引かせシャッフル。使用者が裏向きの2枚から1枚選んで捨てさせる（英雄は転生）。" },
@@ -889,7 +952,18 @@
     let gameMode = "ai"; // "ai" or "online"
     let aiPlayerCount = 2; // 2, 3, 4
     let aiDifficulty = "normal"; // "normal" or "hard"
-    let cpuTimerId = null;
+
+    // 非同期タイマー一括管理
+    const activeTimers = new Set();
+    function addTimer(id) {
+      activeTimers.add(id);
+      return id;
+    }
+    function clearAllGameTimers() {
+      activeTimers.forEach(id => clearTimeout(id));
+      activeTimers.clear();
+      if (autoReturnTimerId) { clearInterval(autoReturnTimerId); autoReturnTimerId = null; }
+    }
 
     const MY_ID = "usr_" + Date.now().toString(36) + "_" + Math.random().toString(36).substr(2, 6);
     let myName = "プレイヤー1";
@@ -902,7 +976,7 @@
       rebornCard: null,
       discardsAll: [],
       logs: [],
-      phase: "init", // init, action, kenja_select, reaper_select, execute_select, duel_show, ended
+      phase: "init", // init, action, busy, kenja_select, reaper_select, execute_select, duel_show, ended
       pendingAction: null
     };
 
@@ -930,7 +1004,6 @@
     const exitToLobbyBtn = document.getElementById("exitToLobbyBtn");
     const gameOverOnlineRow = document.getElementById("gameOverOnlineRow");
     const gameOverAiRow = document.getElementById("gameOverAiRow");
-
 
     window.addEventListener("DOMContentLoaded", () => {
       document.body.addEventListener("click", () => sounds.init(), { once: true });
@@ -964,7 +1037,7 @@
         aiModeSection.classList.remove("active");
       };
 
-      // 人数ボタングループ
+      // 人数ボタン
       document.getElementById("playerCountGroup").querySelectorAll("button").forEach(btn => {
         btn.onclick = () => {
           document.getElementById("playerCountGroup").querySelectorAll("button").forEach(b => b.classList.remove("active"));
@@ -973,7 +1046,7 @@
         };
       });
 
-      // 難易度ボタングループ
+      // 難易度ボタン
       document.getElementById("difficultyGroup").querySelectorAll("button").forEach(btn => {
         btn.onclick = () => {
           document.getElementById("difficultyGroup").querySelectorAll("button").forEach(b => b.classList.remove("active"));
@@ -1001,7 +1074,6 @@
       const urlParams = new URLSearchParams(window.location.search);
       const roomParam = urlParams.get('room');
       if (roomParam) {
-        // 招待リンクで来たら自動でオンラインタブをアクティブに
         tabOnlineBtn.click();
         document.getElementById("customRoomIdInput").value = roomParam;
         if (!savedName) {
@@ -1043,7 +1115,6 @@
       document.getElementById("returnToWaitingBtn").onclick = () => returnToWaitingRoom();
     });
 
-
     function testAndSetImage(el, filename) {
       if (!el) return;
       const url = getAssetUrl(filename);
@@ -1052,10 +1123,38 @@
       img.src = url;
     }
 
+    // ★完全初期化・クリーンアップ関数（ロビー戻り・再戦用）
+    function resetEntireDomAndState() {
+      clearAllGameTimers();
+
+      gameState.phase = "init";
+      gameState.deck = [];
+      gameState.rebornCard = null;
+      gameState.discardsAll = [];
+      gameState.logs = [];
+      gameState.pendingAction = null;
+      gameState.turnIndex = 0;
+      gameState.players = [];
+
+      document.getElementById("myHand").innerHTML = "";
+      document.getElementById("myDiscardLane").innerHTML = "";
+      document.getElementById("opponentsBar").innerHTML = "";
+      document.getElementById("oppFieldContainer").innerHTML = "";
+      document.getElementById("logBox").innerHTML = "";
+      document.getElementById("deckCountText").innerText = "18";
+      document.getElementById("rebornText").innerText = "転生札";
+
+      gameOverModal.classList.add("hidden");
+      actionModal.classList.add("hidden");
+      actionModal.classList.remove("user-opened");
+      duelModal.classList.add("hidden");
+      clairvoyanceModal.classList.add("hidden");
+      swapNoticeModal.classList.add("hidden");
+    }
+
     function leaveToHome() {
-      if (autoReturnTimerId) clearInterval(autoReturnTimerId);
-      if (heartbeatTimerId) clearInterval(heartbeatTimerId);
-      if (cpuTimerId) clearTimeout(cpuTimerId);
+      clearAllGameTimers();
+      if (heartbeatTimerId) { clearInterval(heartbeatTimerId); heartbeatTimerId = null; }
 
       if (mqttClient) {
         try {
@@ -1071,26 +1170,11 @@
 
       isHost = false;
       currentRoomId = "";
-      gameState = {
-        hostId: "",
-        players: [],
-        turnIndex: 0,
-        deck: [],
-        rebornCard: null,
-        discardsAll: [],
-        logs: [],
-        phase: "init",
-        pendingAction: null
-      };
+      resetEntireDomAndState();
 
       endGameBtn.classList.add("hidden");
       gameScreen.classList.add("hidden");
       waitingScreen.classList.add("hidden");
-      gameOverModal.classList.add("hidden");
-      actionModal.classList.add("hidden");
-      duelModal.classList.add("hidden");
-      clairvoyanceModal.classList.add("hidden");
-      swapNoticeModal.classList.add("hidden");
       lobbyScreen.classList.remove("hidden");
     }
 
@@ -1182,6 +1266,7 @@
             gameState.players.push({
               id: msg.id,
               name: msg.name,
+              isCpu: false,
               hand: [],
               discards: [],
               isProtected: false,
@@ -1260,7 +1345,6 @@
         returnToWaitingRoom();
       }
 
-      // ★ホスト自動移譲セーフティ
       else if (msg.type === "HOST_LEFT") {
         if (gameState.phase === "init") {
           gameState.players = gameState.players.filter(p => p.id !== msg.hostId);
@@ -1311,7 +1395,6 @@
           sendMsg({ type: "SYNC", state: gameState }, true);
         }
       } else {
-        // AIモード：ローカルで即時反映・AI行動チェック
         renderGame();
         handlePhaseModals();
         checkCpuAction();
@@ -1333,6 +1416,7 @@
         gameState.players.push({
           id: MY_ID,
           name: myName,
+          isCpu: false,
           hand: [],
           discards: [],
           isProtected: false,
@@ -1364,12 +1448,9 @@
       }
     }
 
-
     /* ================= AI対戦モード初期化 ================= */
     function startAiGame() {
-      if (autoReturnTimerId) clearInterval(autoReturnTimerId);
-      if (heartbeatTimerId) clearInterval(heartbeatTimerId);
-      if (cpuTimerId) clearTimeout(cpuTimerId);
+      resetEntireDomAndState();
 
       gameMode = "ai";
       isHost = true;
@@ -1425,9 +1506,7 @@
 
     /* ================= ゲーム進行ロジック ================= */
     function initNewDeckAndDeal() {
-      if (autoReturnTimerId) clearInterval(autoReturnTimerId);
-      if (heartbeatTimerId) clearInterval(heartbeatTimerId);
-      if (cpuTimerId) clearTimeout(cpuTimerId);
+      clearAllGameTimers();
 
       let deck = [];
       for (let rank = 1; rank <= 10; rank++) {
@@ -1464,7 +1543,7 @@
       endGameBtn.classList.remove("hidden");
       gameOverModal.classList.add("hidden");
 
-      broadcastState();
+      // 手番のセットアップ開始
       startTurn();
     }
 
@@ -1473,6 +1552,8 @@
     }
 
     function startTurn() {
+      if (gameState.phase === "ended") return;
+
       const alivePlayers = gameState.players.filter(p => !p.isEliminated);
       if (alivePlayers.length <= 1) {
         endGameByLastAlive(alivePlayers[0]);
@@ -1482,10 +1563,11 @@
       const current = getCurrentPlayer();
       if (current.isEliminated) { nextTurn(); return; }
 
-      // ★手番開始時に自分の守護を解除
+      // 手番開始時に自分の守護を解除
       current.isProtected = false;
       addLog(`--- 【${current.name}】の手番 ---`);
 
+      // 既に手札が2枚ある場合（賢者ドロー後など）
       if (current.hand.length >= 2) {
         gameState.phase = "action";
         broadcastState();
@@ -1549,6 +1631,8 @@
     }
 
     function nextTurn() {
+      if (gameState.phase === "ended") return;
+
       const alive = gameState.players.filter(p => !p.isEliminated);
       if (alive.length <= 1) {
         endGameByLastAlive(alive[0]);
@@ -1576,9 +1660,11 @@
       });
     }
 
+    // ★カード出し要求（2番などモーダル対応）
     function requestPlayCard(cardRank) {
       const current = getCurrentPlayer();
       if (current.id !== MY_ID) return;
+      if (gameState.phase !== "action") return; // 解決中は操作不可
       if (cardRank === 10) return alert("【10: 英雄】は自分から場に出すことはできません。");
 
       sounds.playPlayCard();
@@ -1594,11 +1680,13 @@
           return;
         }
 
+        // 相手が1人のみの場合
         if (valid.length === 1) {
           const autoTarget = valid[0];
           if (cardRank === 2) {
             showGuessRankModal(autoTarget.name, (guessRank) => {
               actionModal.classList.add("hidden");
+              actionModal.classList.remove("user-opened");
               applyCard(MY_ID, cardRank, autoTarget.id, { guessRank });
             });
           } else {
@@ -1607,6 +1695,7 @@
           return;
         }
 
+        // 相手が複数人の場合
         showTargetSelectModal(cardRank, valid, (targetId, extra) => {
           applyCard(MY_ID, cardRank, targetId, extra);
         });
@@ -1624,10 +1713,12 @@
     }
 
     function processCardPlay(playerId, cardRank, targetId, extra) {
+      // 処理開始：フェーズを busy にしてCPUや他者の二重行動を完全遮断
+      gameState.phase = "busy";
+
       const player = gameState.players.find(p => p.id === playerId);
       const target = gameState.players.find(p => p.id === targetId);
 
-      // 手札がプレイされたため、全CPUのそのプレイヤーに関する記憶をリセット
       clearCpuMemoryOf(playerId);
 
       const alreadyBoyCount = countDiscards(1);
@@ -1640,19 +1731,19 @@
 
       addLog(`${player.name} は【${cardRank}: ${CARDS[cardRank]?.name}】を使用した。`);
 
-      // ★守護チェック
+      // 守護チェック
       if (target && target.isProtected) {
         addLog(`🛡️【乙女の守護】${target.name} は聖なる結界により効果を完全に防いだ！`);
         finishAction();
         return;
       }
 
-      // ★山札0枚チェック
+      // 山札0枚チェック
       if ([5, 9].includes(cardRank) || isSecondBoy) {
         if (gameState.deck.length === 0) {
           addLog(`山札が0枚のため【${CARDS[cardRank]?.name}】の効果は不発。ゲーム終了となります。`);
-          broadcastState();
-          setTimeout(endGameByDeckEmpty, 1000);
+          renderGame();
+          addTimer(setTimeout(endGameByDeckEmpty, 1000));
           return;
         }
       }
@@ -1669,7 +1760,7 @@
           break;
 
         case 2:
-          const guess = extra.guessRank;
+          const guess = extra ? extra.guessRank : 1;
           addLog(`${player.name} は ${target.name} に【${guess}: ${CARDS[guess]?.name}】の捜査を宣言！`);
           if (target.hand.includes(guess)) {
             if (guess === 10) {
@@ -1753,7 +1844,8 @@
             });
           }
 
-          setTimeout(() => {
+          addTimer(setTimeout(() => {
+            duelModal.classList.add("hidden");
             if (pVal < tVal) {
               sounds.playExecute();
               addLog(`決闘の敗北：${player.name} は手札【${pVal}: ${CARDS[pVal]?.name}】を公開して脱落！`);
@@ -1772,9 +1864,8 @@
               if (checkWinnerAfterElimination()) return;
             }
             gameState.pendingAction = null;
-            gameState.phase = "action";
             finishAction();
-          }, 3600);
+          }, 3200));
           return;
 
         case 7:
@@ -1789,7 +1880,6 @@
           player.hand = tempT;
           target.hand = tempP;
 
-          // 交換通知
           if (target.id === MY_ID) {
             showSwapReceivedModal(player.name, tempP[0]);
           } else if (gameMode === "online") {
@@ -1819,6 +1909,7 @@
     }
 
     function applyReaperChoice(executorId, targetId, chosenIndex) {
+      gameState.phase = "busy";
       const executor = gameState.players.find(p => p.id === executorId);
       const target = gameState.players.find(p => p.id === targetId);
       if (!executor || !target) return;
@@ -1831,7 +1922,6 @@
       addLog(`${executor.name} は ${target.name} のカードを捨てさせた！【捨て札: ${discarded}: ${CARDS[discarded]?.name}】`);
 
       gameState.pendingAction = null;
-      gameState.phase = "action";
 
       if (discarded === 10) {
         addLog(`捨てられたのは英雄！英雄は転生する！`);
@@ -1860,6 +1950,7 @@
     }
 
     function applyExecutionChoice(executorId, targetId, chosenCard, isEmperor) {
+      gameState.phase = "busy";
       const executor = gameState.players.find(p => p.id === executorId);
       const target = gameState.players.find(p => p.id === targetId);
       if (!executor || !target) return;
@@ -1873,7 +1964,6 @@
       addLog(`${executor.name} は ${target.name} の【${chosenCard}: ${CARDS[chosenCard]?.name}】を処刑した！`);
 
       gameState.pendingAction = null;
-      gameState.phase = "action";
 
       if (chosenCard === 10) {
         if (isEmperor) {
@@ -1927,20 +2017,25 @@
       }
     }
 
+    // ★手番終了時処理（ロック・山札チェック・ターン移行）
     function finishAction() {
-      broadcastState();
-      
+      gameState.phase = "busy";
+      renderGame();
+
+      // 山札が尽きた場合
       if (gameState.deck.length === 0) {
         addLog(`山札が尽きました！最終判定へ移ります。`);
-        setTimeout(endGameByDeckEmpty, 1200);
+        addTimer(setTimeout(endGameByDeckEmpty, 1100));
         return;
       }
 
-      setTimeout(nextTurn, 900);
+      // 次の手番へ遷移
+      addTimer(setTimeout(nextTurn, 800));
     }
 
     /* ================= 決着＆全プレイヤー手札公開 ================= */
     function endGameByLastAlive(winner) {
+      clearAllGameTimers();
       gameState.phase = "ended";
       revealRebornAtEnd();
       sounds.playWin();
@@ -1948,10 +2043,12 @@
       document.getElementById("gameOverDesc").innerText = winner ? `他のプレイヤーが全員脱落しました！完全勝利！` : "全員が相打ち脱落しました。";
       renderFinalHandsList();
       showGameOverAndStartTimer();
-      broadcastState();
+      renderGame();
+      if (gameMode === "online" && isHost) broadcastState();
     }
 
     function endGameByDeckEmpty() {
+      clearAllGameTimers();
       gameState.phase = "ended";
       revealRebornAtEnd();
       sounds.playWin();
@@ -1972,7 +2069,8 @@
       }
       renderFinalHandsList();
       showGameOverAndStartTimer();
-      broadcastState();
+      renderGame();
+      if (gameMode === "online" && isHost) broadcastState();
     }
 
     function renderFinalHandsList() {
@@ -2003,6 +2101,7 @@
     function showGameOverAndStartTimer() {
       gameOverModal.classList.remove("hidden");
       actionModal.classList.add("hidden");
+      actionModal.classList.remove("user-opened");
       duelModal.classList.add("hidden");
       clairvoyanceModal.classList.add("hidden");
       swapNoticeModal.classList.add("hidden");
@@ -2025,7 +2124,7 @@
           }
         }, 1000);
       } else {
-        // AIモード
+        // AIモード：自動遷移なし。ゆっくり結果を確認して再戦可能
         if (autoReturnTimerId) clearInterval(autoReturnTimerId);
         document.getElementById("autoReturnTimer").classList.add("hidden");
         gameOverOnlineRow.classList.add("hidden");
@@ -2034,21 +2133,8 @@
     }
 
     function returnToWaitingRoom() {
-      if (autoReturnTimerId) clearInterval(autoReturnTimerId);
+      resetEntireDomAndState();
       if (isHost) {
-        gameState.phase = "init";
-        gameState.deck = [];
-        gameState.rebornCard = null;
-        gameState.discardsAll = [];
-        gameState.logs = [];
-        gameState.pendingAction = null;
-        gameState.players.forEach(p => {
-          p.hand = [];
-          p.discards = [];
-          p.isProtected = false;
-          p.hasKenja = false;
-          p.isEliminated = false;
-        });
         broadcastState();
       } else {
         endGameBtn.classList.add("hidden");
@@ -2063,59 +2149,66 @@
       startHeartbeat();
     }
 
-
     /* ================= CPU（AI）思考エンジン ================= */
     function checkCpuAction() {
       if (gameMode !== "ai") return;
-      if (cpuTimerId) clearTimeout(cpuTimerId);
+      if (gameState.phase === "ended" || gameState.phase === "busy") return;
 
       const current = getCurrentPlayer();
 
-      // ① CPUの通常手番
+      // ① CPU通常手番
       if (gameState.phase === "action" && current.isCpu && !current.isEliminated) {
-        cpuTimerId = setTimeout(() => {
-          executeCpuTurn(current);
-        }, 900);
+        addTimer(setTimeout(() => {
+          if (gameState.phase === "action" && getCurrentPlayer().id === current.id) {
+            executeCpuTurn(current);
+          }
+        }, 850));
         return;
       }
 
-      // ② CPUの賢者選択
+      // ② 賢者選択
       if (gameState.phase === "kenja_select") {
         const p = gameState.pendingAction;
         if (p && p.userId) {
           const actor = gameState.players.find(pl => pl.id === p.userId);
           if (actor && actor.isCpu) {
-            cpuTimerId = setTimeout(() => {
-              executeCpuKenja(actor);
-            }, 1000);
+            addTimer(setTimeout(() => {
+              if (gameState.phase === "kenja_select") {
+                executeCpuKenja(actor);
+              }
+            }, 950));
             return;
           }
         }
       }
 
-      // ③ CPUの死神選択
+      // ③ 死神選択
       if (gameState.phase === "reaper_select") {
         const p = gameState.pendingAction;
         if (p && p.executorId) {
           const actor = gameState.players.find(pl => pl.id === p.executorId);
           if (actor && actor.isCpu) {
-            cpuTimerId = setTimeout(() => {
-              executeCpuReaper(actor);
-            }, 1100);
+            addTimer(setTimeout(() => {
+              if (gameState.phase === "reaper_select") {
+                executeCpuReaper(actor);
+              }
+            }, 1000));
             return;
           }
         }
       }
 
-      // ④ CPUの処刑選択
+      // ④ 処刑選択
       if (gameState.phase === "execute_select") {
         const p = gameState.pendingAction;
         if (p && p.executorId) {
           const actor = gameState.players.find(pl => pl.id === p.executorId);
           if (actor && actor.isCpu) {
-            cpuTimerId = setTimeout(() => {
-              executeCpuExecution(actor);
-            }, 1200);
+            addTimer(setTimeout(() => {
+              if (gameState.phase === "execute_select") {
+                executeCpuExecution(actor);
+              }
+            }, 1100));
             return;
           }
         }
@@ -2125,35 +2218,25 @@
     function executeCpuTurn(cpu) {
       if (cpu.hand.length === 0) return;
 
-      // 手札が1枚だけの場合（引けなかった場合など）
-      if (cpu.hand.length === 1) {
-        const card = cpu.hand[0];
-        if (card === 10) return; // 英雄は出せない
-        playCpuCard(cpu, card, null);
-        return;
-      }
-
-      const c1 = cpu.hand[0];
-      const c2 = cpu.hand[1];
-
       let chosenCard;
       let otherCard;
 
-      if (c1 === 10) {
-        chosenCard = c2;
-        otherCard = c1;
-      } else if (c2 === 10) {
-        chosenCard = c1;
-        otherCard = c2;
+      if (cpu.hand.length === 1) {
+        chosenCard = cpu.hand[0];
+        otherCard = null;
       } else {
-        const score1 = evaluateCpuCard(cpu, c1, c2);
-        const score2 = evaluateCpuCard(cpu, c2, c1);
-        if (score1 >= score2) {
-          chosenCard = c1;
-          otherCard = c2;
+        const c1 = cpu.hand[0];
+        const c2 = cpu.hand[1];
+
+        if (c1 === 10) {
+          chosenCard = c2; otherCard = c1;
+        } else if (c2 === 10) {
+          chosenCard = c1; otherCard = c2;
         } else {
-          chosenCard = c2;
-          otherCard = c1;
+          const s1 = evaluateCpuCard(cpu, c1, c2);
+          const s2 = evaluateCpuCard(cpu, c2, c1);
+          if (s1 >= s2) { chosenCard = c1; otherCard = c2; }
+          else { chosenCard = c2; otherCard = c1; }
         }
       }
 
@@ -2196,54 +2279,38 @@
       const unprotected = enemies.filter(p => !p.isProtected);
 
       switch (cardRank) {
-        case 1: // 少年
-          score = isSecondBoy ? 92 : 45;
-          break;
-
-        case 2: // 兵士
+        case 1: score = isSecondBoy ? 92 : 45; break;
+        case 2:
           let hasKnown = false;
           unprotected.forEach(e => {
             if (cpu.memory && cpu.memory[e.id]) hasKnown = true;
           });
           score = hasKnown ? 180 : 60;
           break;
-
-        case 3: // 占師
+        case 3:
           const unknown = unprotected.filter(e => !(cpu.memory && cpu.memory[e.id]));
           score = unknown.length > 0 ? 68 : 30;
           break;
-
-        case 4: // 乙女
+        case 4:
           if (otherCard >= 9) score = 85;
           else if (otherCard >= 7) score = 75;
           else score = 65;
           break;
-
-        case 5: // 死神
-          score = gameState.deck.length > 0 ? 72 : 15;
-          break;
-
-        case 6: // 貴族
+        case 5: score = gameState.deck.length > 0 ? 72 : 15; break;
+        case 6:
           if (otherCard >= 9) score = 110;
           else if (otherCard === 8) score = 90;
           else if (otherCard === 7) score = 70;
           else if (otherCard <= 5) score = 5;
           else score = 40;
           break;
-
-        case 7: // 賢者
-          score = gameState.deck.length >= 2 ? 80 : 35;
-          break;
-
-        case 8: // 精霊
+        case 7: score = gameState.deck.length >= 2 ? 80 : 35; break;
+        case 8:
           if (otherCard <= 3) score = 88;
           else if (otherCard <= 5) score = 60;
           else score = 15;
           break;
-
-        case 9: // 皇帝
-          score = gameState.deck.length > 0 ? 95 : 15;
-          break;
+        case 9: score = gameState.deck.length > 0 ? 95 : 15; break;
       }
 
       if (aiDifficulty === "normal") {
@@ -2260,19 +2327,15 @@
       const unprotected = enemies.filter(p => !p.isProtected);
       const pool = unprotected.length > 0 ? unprotected : enemies;
 
-      // 兵士（2）で記憶がある相手を最優先
       if (cardRank === 2) {
         const known = pool.find(p => cpu.memory && cpu.memory[p.id]);
         if (known) return known;
       }
-
-      // 占師（3）なら手札未確認の相手を優先
       if (cardRank === 3) {
         const unknown = pool.find(p => !(cpu.memory && cpu.memory[p.id]));
         if (unknown) return unknown;
       }
 
-      // 人間プレイヤーを少し優先
       const human = pool.find(p => !p.isCpu);
       if (human && Math.random() < 0.6) return human;
 
@@ -2280,12 +2343,10 @@
     }
 
     function guessCpuRank(cpu, target) {
-      // 記憶にある場合
       if (cpu.memory && cpu.memory[target.id]) {
         return cpu.memory[target.id];
       }
 
-      // 残りカードプール推計
       const remainingCounts = {};
       for (let r = 1; r <= 10; r++) remainingCounts[r] = CARDS[r].count;
       (gameState.discardsAll || []).forEach(r => {
@@ -2327,7 +2388,6 @@
       if (!p || !p.drawnCards) return;
       const drawn = p.drawnCards;
 
-      // 優先度：10, 9, 4, 7, 6, 5, 2, 8, 1, 3
       const priority = [10, 9, 4, 7, 6, 5, 2, 8, 1, 3];
       drawn.sort((a, b) => priority.indexOf(a) - priority.indexOf(b));
       const chosen = drawn[0];
@@ -2349,13 +2409,9 @@
 
       let chosen;
       if (p.isEmperor) {
-        if (cards.includes(10)) {
-          chosen = 10;
-        } else {
-          chosen = Math.max(...cards);
-        }
+        if (cards.includes(10)) chosen = 10;
+        else chosen = Math.max(...cards);
       } else {
-        // 少年（革命）：英雄は転生するので英雄以外を優先
         if (cards.includes(10) && cards.some(c => c !== 10)) {
           chosen = cards.find(c => c !== 10);
         } else {
@@ -2365,7 +2421,6 @@
 
       applyExecutionChoice(cpu.id, p.targetId, chosen, p.isEmperor);
     }
-
 
     /* ================= 待機モーダルハンドラ ================= */
     function handlePhaseModals() {
@@ -2410,12 +2465,12 @@
       else if (gameState.phase === "duel_show") {
         const p = gameState.pendingAction;
         if (p && !duelModal.classList.contains("hidden")) {
-          // 当事者はモーダル表示中
+          // モーダル表示中
         } else if (p) {
           showWaitingNoticeModal("貴族の決闘", `${p.p1Name} と ${p.p2Name} が密かに対決を行っています...`);
         }
       }
-      else if (gameState.phase === "action" || gameState.phase === "ended") {
+      else if (gameState.phase === "action" || gameState.phase === "ended" || gameState.phase === "busy") {
         if (!actionModal.classList.contains("user-opened")) {
           actionModal.classList.add("hidden");
         }
@@ -2471,6 +2526,9 @@
       document.getElementById("myGuardBadge").classList.toggle("hidden", !me.isProtected);
       document.getElementById("myKenjaBadge").classList.toggle("hidden", !me.hasKenja);
 
+      // ★推理アシスト：未公開カード残数ボードの更新
+      renderCardTracker();
+
       // 自分の捨て札
       const myDiscardLane = document.getElementById("myDiscardLane");
       myDiscardLane.innerHTML = "";
@@ -2500,7 +2558,7 @@
       const oppBar = document.getElementById("opponentsBar");
       oppBar.innerHTML = "";
       opponents.forEach(opp => {
-        const isOppTurn = (currentP.id === opp.id);
+        const isOppTurn = (currentP.id === opp.id && gameState.phase !== "ended");
         const box = document.createElement("div");
         box.className = `opp-badge-box ${opp.isEliminated ? "eliminated" : ""} ${isOppTurn ? "active-turn" : ""}`;
         
@@ -2533,6 +2591,33 @@
         });
         oppFieldContainer.appendChild(lane);
       });
+    }
+
+    // ★推理アシスト：未公開カード一覧カウンター描画
+    function renderCardTracker() {
+      const container = document.getElementById("trackerItems");
+      if (!container) return;
+
+      const remainingCounts = {};
+      for (let r = 1; r <= 10; r++) {
+        remainingCounts[r] = CARDS[r].count;
+      }
+      (gameState.discardsAll || []).forEach(r => {
+        if (remainingCounts[r] > 0) remainingCounts[r]--;
+      });
+
+      container.innerHTML = "";
+      for (let r = 1; r <= 10; r++) {
+        const count = remainingCounts[r];
+        const item = document.createElement("div");
+        item.className = `tracker-item ${count === 0 ? "exhausted" : ""}`;
+        item.innerHTML = `
+          <span class="tracker-rank">${r}</span>
+          <span class="tracker-count">${count}枚</span>
+        `;
+        item.title = `【${r}: ${CARDS[r].name}】 残り: ${count}/${CARDS[r].count}枚`;
+        container.appendChild(item);
+      }
     }
 
     function createCardElem(rank, isMini = false) {
@@ -2677,9 +2762,10 @@
           <div style="font-size:13px; color:#cbd5e0; line-height:1.6;">${CARDS[rank].desc}</div>
         </div>
       `;
-      document.getElementById("modalActions").innerHTML = `<button class="btn btn-secondary" onclick="actionModal.classList.add('hidden')">閉じる</button>`;
+      document.getElementById("modalActions").innerHTML = `<button class="btn btn-secondary" onclick="actionModal.classList.add('hidden'); actionModal.classList.remove('user-opened');">閉じる</button>`;
     }
 
+    // ★ターゲット選択モーダル（2番など確実に動作するよう修正）
     function showTargetSelectModal(cardRank, targetPlayers, onSelect) {
       actionModal.classList.remove("hidden");
       actionModal.classList.add("user-opened");
@@ -2696,18 +2782,21 @@
           if (cardRank === 2) {
             showGuessRankModal(tp.name, (guessRank) => {
               actionModal.classList.add("hidden");
+              actionModal.classList.remove("user-opened");
               onSelect(tp.id, { guessRank });
             });
           } else {
             actionModal.classList.add("hidden");
+            actionModal.classList.remove("user-opened");
             onSelect(tp.id, null);
           }
         };
         body.appendChild(btn);
       });
-      document.getElementById("modalActions").innerHTML = `<button class="btn btn-secondary" onclick="actionModal.classList.add('hidden')">キャンセル</button>`;
+      document.getElementById("modalActions").innerHTML = `<button class="btn btn-secondary" onclick="actionModal.classList.add('hidden'); actionModal.classList.remove('user-opened');">キャンセル</button>`;
     }
 
+    // ★兵士推理宣言モーダル（1〜10）
     function showGuessRankModal(targetName, onGuess) {
       document.getElementById("modalTitle").innerText = `【兵士：捜査】`;
       document.getElementById("modalDesc").innerText = `${targetName} の手札を推理して宣言してください（1〜10）`;
@@ -2721,6 +2810,7 @@
         btn.onclick = () => onGuess(r);
         body.appendChild(btn);
       }
+      document.getElementById("modalActions").innerHTML = `<button class="btn btn-secondary" onclick="actionModal.classList.add('hidden'); actionModal.classList.remove('user-opened');">キャンセル</button>`;
     }
 
     function showChoiceModal(title, desc, cardRanks, onSelect) {
