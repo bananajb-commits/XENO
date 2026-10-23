@@ -1,3 +1,4 @@
+<html>
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -10,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Shippori+Mincho:wght@500;700;800&display=swap" rel="stylesheet">
 
-  <!-- 超高速ブローカー対応MQTT -->
+  <!-- MQTTブローカーライブラリ -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
   <style>
@@ -21,6 +22,9 @@
       --bg: #07090c;
       --panel: rgba(14, 17, 23, 0.96);
       --border: rgba(212, 175, 55, 0.4);
+      --danger: #ef4444;
+      --success: #10b981;
+      --blue: #3b82f6;
     }
 
     * {
@@ -72,6 +76,10 @@
       cursor: pointer;
       border: 1px solid transparent;
       transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
     }
     .btn-gold {
       background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 60%, var(--gold-dark) 100%);
@@ -80,9 +88,11 @@
     }
     .btn-gold:active { transform: scale(0.96); }
     .btn-primary { background: #1a273b; color: #fff; border-color: #3b82f6; }
+    .btn-primary:active { transform: scale(0.96); }
     .btn-secondary { background: #171b22; color: #cbd5e0; border-color: #374151; }
+    .btn-secondary:active { transform: scale(0.96); }
     .btn-danger { background: #5c1d1d; color: #fecaca; border-color: #991b1b; }
-    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
 
     .screen {
       height: calc(100vh - 42px);
@@ -101,7 +111,7 @@
       box-shadow: 0 20px 40px rgba(0,0,0,0.9), 0 0 20px rgba(212, 175, 55, 0.15);
       border-radius: 8px;
       padding: 24px 22px;
-      max-width: 400px;
+      max-width: 440px;
       width: 100%;
     }
     .title {
@@ -141,7 +151,7 @@
       justify-content: space-between;
       align-items: center;
     }
-    .member-list { list-style: none; margin: 14px 0; }
+    .member-list { list-style: none; margin: 14px 0; max-height: 160px; overflow-y: auto; }
     .member-list li {
       padding: 9px 12px;
       background: #111827;
@@ -150,6 +160,7 @@
       border-left: 3px solid var(--gold);
       display: flex;
       justify-content: space-between;
+      align-items: center;
       font-weight: 700;
       font-size: 13px;
     }
@@ -164,9 +175,10 @@
       background-position: center;
       display: grid;
       grid-template-rows: auto auto 1fr auto auto;
-      padding: 4px 10px;
+      padding: 4px 8px;
       position: relative;
       gap: 3px;
+      overflow: hidden;
     }
 
     /* 相手情報バー */
@@ -174,12 +186,13 @@
       display: flex;
       justify-content: center;
       gap: 8px;
-      min-height: 40px;
+      min-height: 42px;
       align-items: center;
       flex-wrap: wrap;
+      z-index: 5;
     }
     .opp-badge-box {
-      background: rgba(14, 17, 23, 0.92);
+      background: rgba(14, 17, 23, 0.94);
       border: 1px solid #374151;
       border-radius: 20px;
       padding: 3px 10px;
@@ -194,21 +207,22 @@
       background: rgba(25, 30, 42, 0.95);
     }
     .opp-badge-box.eliminated { opacity: 0.25; filter: grayscale(1); }
-    .opp-name { font-size: 12px; font-weight: 700; color: #cbd5e0; display: flex; align-items: center; }
+    .opp-name { font-size: 12px; font-weight: 700; color: #cbd5e0; display: flex; align-items: center; gap: 4px; }
     .opp-cards { display: flex; gap: 3px; }
 
     /* 推理アシスト：残りカードカウンターバー */
     .card-tracker-bar {
-      background: rgba(10, 14, 20, 0.92);
+      background: rgba(10, 14, 20, 0.95);
       border: 1px solid rgba(212, 175, 55, 0.3);
       border-radius: 6px;
-      padding: 4px 8px;
+      padding: 3px 6px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      max-width: 720px;
+      max-width: 760px;
       margin: 0 auto;
       width: 100%;
+      z-index: 5;
     }
     .tracker-title {
       font-size: 10px;
@@ -217,10 +231,11 @@
       letter-spacing: 1px;
       white-space: nowrap;
       margin-right: 6px;
+      cursor: help;
     }
     .tracker-items {
       display: flex;
-      gap: 4px;
+      gap: 3px;
       flex: 1;
       justify-content: space-around;
     }
@@ -228,17 +243,24 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 1px 4px;
+      padding: 1px 3px;
       border-radius: 3px;
       background: rgba(255,255,255,0.04);
-      min-width: 32px;
+      min-width: 30px;
       border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
       transition: all 0.2s;
+    }
+    .tracker-item:hover {
+      background: rgba(212, 175, 55, 0.15);
+      border-color: var(--gold);
+      transform: translateY(-2px);
     }
     .tracker-item.exhausted {
       opacity: 0.22;
       filter: grayscale(1);
       border-color: transparent;
+      cursor: default;
     }
     .tracker-rank {
       font-family: 'Cinzel', serif;
@@ -254,70 +276,93 @@
       line-height: 1.2;
     }
 
-    /* 捨て札ゾーン */
+    /* 相手捨て札ゾーン（改修：正位置配置・スマホでも崩れないレイアウト） */
     .field-zone {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       position: relative;
-      min-height: 52px;
+      min-height: 54px;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
     }
     .field-players-container {
       display: flex;
       justify-content: center;
-      gap: 12px;
+      gap: 8px;
       width: 100%;
+      overflow-x: auto;
+      padding-bottom: 2px;
     }
     .player-discard-lane {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       flex: 1;
-      max-width: 340px;
+      min-width: 100px;
+      max-width: 260px;
+      background: rgba(15, 20, 28, 0.5);
+      border-radius: 6px;
+      padding: 2px 4px;
+      border: 1px solid rgba(255,255,255,0.05);
     }
     .lane-label {
       font-size: 9px;
-      color: rgba(212, 175, 55, 0.7);
-      letter-spacing: 1px;
+      color: rgba(212, 175, 55, 0.85);
+      letter-spacing: 0.5px;
       margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
     }
     .lane-cards {
       display: flex;
       justify-content: center;
       align-items: center;
       width: 100%;
+      min-height: 52px;
       position: relative;
+      flex-wrap: nowrap;
+      overflow-x: visible;
     }
     .lane-cards .card-mini {
       margin: 0 -7px;
       transition: transform 0.2s, z-index 0.2s;
     }
+    .lane-cards .card-mini:hover {
+      transform: translateY(-8px) scale(1.2);
+      z-index: 50 !important;
+    }
 
-    .opp-discard-card { transform: rotate(180deg); }
-    .opp-discard-card:hover { transform: rotate(180deg) translateY(-8px) scale(1.15) !important; z-index: 50 !important; }
-    .opp-discard-card .card-badge { transform: rotate(180deg); bottom: 2px; right: 2px; top: auto; left: auto; }
+    /* 相手の捨て札（改修：180度反転を廃止し正位置で読みやすく配置） */
+    .opp-discard-card {
+      transform: none !important;
+    }
 
-    .my-discard-card { transform: rotate(0deg); }
-    .my-discard-card:hover { transform: translateY(-8px) scale(1.15); z-index: 50 !important; }
+    .my-discard-card {
+      transform: none;
+    }
 
     /* 中央テーブル */
     .center-table {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 16px;
-      min-height: 76px;
+      gap: 14px;
+      min-height: 74px;
     }
-    .deck-zone { display: flex; align-items: center; gap: 12px; }
+    .deck-zone { display: flex; align-items: center; gap: 10px; }
     .deck-wrapper, .reborn-wrapper { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .zone-label { font-size: 9px; color: #9ca3af; }
 
-    /* カード本体 */
+    /* カード本体（フォールバック背景グラデーション完備） */
     .card {
-      width: 78px;
-      height: 114px;
+      width: 82px;
+      height: 120px;
       border-radius: 6px;
       position: relative;
       background-size: cover;
@@ -326,8 +371,8 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.85);
       border: 1px solid var(--border);
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-      background-color: #151a24;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      background: radial-gradient(circle at center, #1e2636 0%, #0d1117 100%);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -339,6 +384,12 @@
       box-shadow: 0 10px 20px rgba(212, 175, 55, 0.8);
       border-color: var(--gold-light);
     }
+    .card.selected {
+      transform: translateY(-14px) scale(1.08) !important;
+      border-color: #ffd700 !important;
+      box-shadow: 0 0 24px rgba(255, 215, 0, 0.9) !important;
+      z-index: 20;
+    }
     .card.disabled {
       opacity: 0.4;
       cursor: not-allowed;
@@ -347,18 +398,19 @@
     }
 
     .card-mini {
-      width: 38px;
-      height: 56px;
+      width: 36px;
+      height: 52px;
       border-radius: 4px;
       border: 1px solid #5a4b26;
       background-size: cover;
       background-position: center center;
       background-repeat: no-repeat;
-      background-color: #151a24;
+      background: radial-gradient(circle at center, #1e2636 0%, #0d1117 100%);
       flex-shrink: 0;
       position: relative;
       box-shadow: 0 2px 6px rgba(0,0,0,0.7);
       overflow: hidden;
+      cursor: pointer;
     }
 
     .card-back {
@@ -379,18 +431,18 @@
     }
 
     .deck-card {
-      width: 64px;
-      height: 94px;
+      width: 60px;
+      height: 88px;
       border-radius: 5px;
       background-size: cover;
       background-position: center center;
-      background-repeat: no-repeat;
       border: 1px solid var(--gold);
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 10px rgba(0,0,0,0.8);
       overflow: hidden;
+      position: relative;
     }
     .deck-count {
       background: rgba(0, 0, 0, 0.9);
@@ -404,20 +456,21 @@
       z-index: 2;
     }
     .reborn-card {
-      width: 64px;
-      height: 94px;
+      width: 60px;
+      height: 88px;
       border-radius: 5px;
       background-size: cover;
       background-position: center center;
-      background-repeat: no-repeat;
       border: 1px dashed var(--gold);
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 10px rgba(0,0,0,0.8);
       overflow: hidden;
+      position: relative;
+      transition: all 0.3s;
     }
-    .horizontal { transform: rotate(90deg); margin: 8px 0; }
+    .horizontal { transform: rotate(90deg); margin: 6px 0; }
     .reborn-text {
       background: rgba(0, 0, 0, 0.85);
       padding: 2px 5px;
@@ -428,19 +481,47 @@
       z-index: 2;
     }
 
+    /* 手番思考タイマー表示 */
+    .turn-timer-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      background: rgba(0,0,0,0.8);
+      box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+    }
+    .timer-sec {
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--gold-light);
+      line-height: 1;
+    }
+    .timer-label {
+      font-size: 7px;
+      color: #9ca3af;
+      margin-top: 1px;
+    }
+
     .game-log-box {
       width: 220px;
       height: 72px;
-      background: rgba(8, 10, 14, 0.92);
+      background: rgba(8, 10, 14, 0.94);
       border: 1px solid #374151;
       border-radius: 6px;
-      padding: 6px 8px;
+      padding: 5px 8px;
       overflow-y: auto;
       font-size: 11px;
       display: flex;
       flex-direction: column-reverse;
     }
     .log-entry { margin-bottom: 2px; line-height: 1.35; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .log-entry.important { color: var(--gold-light); font-weight: bold; }
+    .log-entry.danger { color: #f87171; font-weight: bold; }
 
     /* 最下段：自分エリア */
     .my-area {
@@ -452,6 +533,9 @@
       flex-direction: column;
       align-items: center;
       position: relative;
+      max-width: 640px;
+      width: 100%;
+      margin: 0 auto;
     }
     .player-info-bar {
       display: flex;
@@ -469,10 +553,19 @@
     
     .hand-container {
       display: flex;
-      gap: 14px;
+      gap: 16px;
       justify-content: center;
-      min-height: 116px;
+      min-height: 122px;
       align-items: flex-end;
+      position: relative;
+    }
+
+    /* 2ステッププレイ確認バー */
+    .play-confirm-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      animation: fadeIn 0.2s ease;
     }
 
     .card-badge {
@@ -524,11 +617,11 @@
       box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
       border-radius: 8px;
       padding: 18px;
-      max-width: 480px;
+      max-width: 500px;
       width: 92%;
     }
     .modal-body { margin: 12px 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
     .rule-scroll { max-height: 55vh; overflow-y: auto; font-size: 13px; line-height: 1.6; padding-right: 6px; }
     .rule-scroll section { margin-bottom: 14px; }
     .rule-scroll h3 { color: var(--gold-light); margin-bottom: 4px; }
@@ -540,7 +633,7 @@
       flex-direction: column;
       gap: 8px;
       margin: 14px 0;
-      max-height: 180px;
+      max-height: 220px;
       overflow-y: auto;
       text-align: left;
     }
@@ -610,6 +703,11 @@
       border-radius: 8px;
       font-weight: 700;
       margin-left: 4px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -716,10 +814,11 @@
 
         <!-- 推理アシスト：残りカードカウンター -->
         <div class="card-tracker-bar" id="cardTrackerBar">
-          <span class="tracker-title">未公開札</span>
+          <span class="tracker-title" id="trackerTitleHelp" title="クリックでカード一覧・効果を確認">未公開札ℹ️</span>
           <div class="tracker-items" id="trackerItems"></div>
         </div>
 
+        <!-- 相手捨て札ゾーン（改修：正位置で読みやすく配置） -->
         <div class="field-zone">
           <div class="field-players-container" id="oppFieldContainer"></div>
         </div>
@@ -728,7 +827,7 @@
           <div class="deck-zone">
             <div class="deck-wrapper">
               <div class="deck-card card-back" id="deckVisual">
-                <div class="deck-count" id="deckCountText">18</div>
+                <div class="deck-count" id="deckCountText">15</div>
               </div>
               <span class="zone-label">山札</span>
             </div>
@@ -739,9 +838,17 @@
               <span class="zone-label">転生札</span>
             </div>
           </div>
+          
+          <!-- 手番タイマー -->
+          <div class="turn-timer-box" id="turnTimerBox">
+            <span class="timer-sec" id="turnTimerSec">45</span>
+            <span class="timer-label">TIME</span>
+          </div>
+
           <div class="game-log-box" id="logBox"></div>
         </div>
 
+        <!-- 自分の捨て札ゾーン -->
         <div class="field-zone">
           <div class="player-discard-lane">
             <div class="lane-label">あなたの捨て札</div>
@@ -749,6 +856,7 @@
           </div>
         </div>
 
+        <!-- 最下段：自分エリア -->
         <div class="my-area">
           <div class="player-info-bar">
             <span class="player-name" id="myPlayerName">自分</span>
@@ -759,6 +867,12 @@
             </div>
           </div>
           <div class="hand-container" id="myHand"></div>
+          
+          <!-- 2ステッププレイ確認バー（誤タップ防止） -->
+          <div class="play-confirm-bar hidden" id="playConfirmBar">
+            <button id="confirmPlayBtn" class="btn btn-gold">このカードを出す</button>
+            <button id="cancelSelectBtn" class="btn btn-secondary">キャンセル</button>
+          </div>
         </div>
       </div>
     </div>
@@ -773,7 +887,7 @@
       </div>
     </div>
 
-    <!-- 貴族：決闘モーダル -->
+    <!-- 貴族：決闘モーダル（当事者間のみ開示） -->
     <div id="duelModal" class="modal-overlay hidden">
       <div class="modal-content" style="text-align:center;">
         <h2 style="color:var(--gold-light); margin-bottom:8px;">⚔️ 貴族の決闘 ⚔️</h2>
@@ -784,24 +898,37 @@
       </div>
     </div>
 
-    <!-- 占師：透視モーダル -->
+    <!-- 占師：透視モーダル（手番停止・確認まで同期） -->
     <div id="clairvoyanceModal" class="modal-overlay hidden">
       <div class="modal-content" style="text-align:center;">
         <h2 style="color:var(--gold-light); margin-bottom:8px;">🔮 占師：透視結果 🔮</h2>
         <p id="clairvoyanceDesc" style="font-size:13px; color:#cbd5e0; margin-bottom:15px;"></p>
         <div id="clairvoyanceCards" style="display:flex; justify-content:center; gap:15px; margin:15px 0;"></div>
         <p style="font-size:11px; color:#9ca3af; margin-bottom:12px;">※この結果はあなたにだけ見えています。</p>
-        <button id="closeClairvoyanceBtn" class="btn btn-gold">閉じる</button>
+        <button id="closeClairvoyanceBtn" class="btn btn-gold">確認して手番を終える</button>
       </div>
     </div>
 
-    <!-- 精霊：交換通知モーダル -->
+    <!-- 精霊：交換通知モーダル（手番停止・確認まで同期） -->
     <div id="swapNoticeModal" class="modal-overlay hidden">
       <div class="modal-content" style="text-align:center;">
         <h2 style="color:var(--gold-light); margin-bottom:8px;">🕊️ 精霊：手札交換 🕊️</h2>
         <p id="swapNoticeDesc" style="font-size:13px; color:#cbd5e0; margin-bottom:15px;"></p>
         <div id="swapReceivedCardBox" style="display:flex; justify-content:center; margin:15px 0;"></div>
-        <button id="closeSwapBtn" class="btn btn-gold">受け取る</button>
+        <button id="closeSwapBtn" class="btn btn-gold">手札を受け取る</button>
+      </div>
+    </div>
+
+    <!-- 死神：対象者への通知モーダル -->
+    <div id="reaperNoticeModal" class="modal-overlay hidden">
+      <div class="modal-content" style="text-align:center;">
+        <h2 style="color:var(--gold-light); margin-bottom:8px;">💀 死神：疫病の宣告 💀</h2>
+        <p id="reaperNoticeDesc" style="font-size:13px; color:#cbd5e0; margin-bottom:15px;"></p>
+        <div style="font-size:12px; color:var(--danger); font-weight:bold; margin-bottom:6px;">【捨てさせられたカード】</div>
+        <div id="reaperDiscardedCardBox" style="display:flex; justify-content:center; margin-bottom:14px;"></div>
+        <div style="font-size:12px; color:var(--success); font-weight:bold; margin-bottom:6px;">【手元に残ったカード】</div>
+        <div id="reaperRemainingCardBox" style="display:flex; justify-content:center; margin-bottom:15px;"></div>
+        <button id="closeReaperNoticeBtn" class="btn btn-gold">確認</button>
       </div>
     </div>
 
@@ -842,17 +969,22 @@
             <p><strong>勝利条件：</strong> 他プレイヤー全員を脱落させるか、手番終了時に山札が尽きた時点で最も数字が大きいカードを持っていた人の勝利。</p>
           </section>
           <section>
+            <h3>■ XENOの黄金律</h3>
+            <p>・効果が発動するのは自分の番のみ。他の効果で捨てられた場合や最後の数字比べでは効果は発動しません。</p>
+            <p>・皇帝・死神・少年の効果で山札からカードを引く際、山札が0枚であれば効果は発動せず、そのままゲーム終了となります。</p>
+          </section>
+          <section>
             <h3>■ カード効果（RANK 1 〜 10）</h3>
-            <div class="card-rule-item"><strong>【1】少年 (革命):</strong> 1枚目は効果なし。場に2枚目が出た時、相手1人を公開処刑する（英雄は転生可）。</div>
-            <div class="card-rule-item"><strong>【2】兵士 (捜査):</strong> 相手1人とカード名を宣言。的中なら脱落（英雄は転生）。※兵士(2)自身も宣言可！</div>
-            <div class="card-rule-item"><strong>【3】占師 (透視):</strong> 相手1人の手札を見る。</div>
-            <div class="card-rule-item"><strong>【4】乙女 (守護):</strong> 次の自分の手番まで相手のカード効果を受けない。</div>
-            <div class="card-rule-item"><strong>【5】死神 (疫病):</strong> 相手に1枚引かせシャッフル。使用者が裏向きの2枚から1枚選んで捨てさせる（英雄は転生）。</div>
-            <div class="card-rule-item"><strong>【6】貴族 (対決):</strong> 相手1人と手札を見せ合い、数字の小さい方が脱落（同数は両者脱落）。</div>
-            <div class="card-rule-item"><strong>【7】賢者 (選択):</strong> 次の自分の手番で山札から3枚引いて好きな1枚を選び、残りを山札へ戻す。※効果発動後に転生しても次回発動可能！</div>
-            <div class="card-rule-item"><strong>【8】精霊 (交換):</strong> 相手1人と手札を交換する。</div>
-            <div class="card-rule-item"><strong>【9】皇帝 (公開処刑):</strong> 相手に1枚引かせ2枚とも公開。1枚処刑。※英雄を処刑した場合は転生不可で即脱落！</div>
-            <div class="card-rule-item"><strong>【10】英雄 (潜伏・転生):</strong> 出せない。皇帝以外で捨てられたら転生札で復活。</div>
+            <div class="card-rule-item"><strong>【1】少年 (革命) ×2:</strong> 1枚目は効果なし。場に2枚目が出た時、相手1人を公開処刑する（英雄は転生可）。</div>
+            <div class="card-rule-item"><strong>【2】兵士 (捜査) ×2:</strong> 相手1人とカード名を宣言。的中なら脱落（英雄は転生）。※兵士(2)自身も宣言可！</div>
+            <div class="card-rule-item"><strong>【3】占師 (透視) ×2:</strong> 相手1人の手札を見る（自分だけに表示）。</div>
+            <div class="card-rule-item"><strong>【4】乙女 (守護) ×2:</strong> 次の自分の手番まで相手のカード効果を受けない。</div>
+            <div class="card-rule-item"><strong>【5】死神 (疫病) ×2:</strong> 相手に1枚引かせシャッフル。使用者が裏向きの2枚から1枚選んで捨てさせる（英雄は転生）。</div>
+            <div class="card-rule-item"><strong>【6】貴族 (対決) ×2:</strong> 相手1人と密かに手札を見せ合い、数字の小さい方が脱落（同数は両者脱落）。</div>
+            <div class="card-rule-item"><strong>【7】賢者 (選択) ×2:</strong> 次の自分の手番で山札から3枚引いて好きな1枚を選び、残りを山札へ戻す。※効果発動後に転生しても次回発動可能！</div>
+            <div class="card-rule-item"><strong>【8】精霊 (交換) ×2:</strong> 相手1人と手札を交換する。</div>
+            <div class="card-rule-item"><strong>【9】皇帝 (公開処刑) ×1:</strong> 相手に1枚引かせ2枚とも公開。1枚処刑。※英雄を処刑した場合は転生不可で即脱落！</div>
+            <div class="card-rule-item"><strong>【10】英雄 (潜伏・転生) ×1:</strong> 出せない。皇帝以外で捨てられたら手札をすべて捨てて転生札で復活。</div>
           </section>
         </div>
         <button id="closeRuleBtn" class="btn btn-secondary" style="margin-top:10px;">閉じる</button>
@@ -861,6 +993,9 @@
   </div>
 
   <script>
+    /* ==========================================================================
+       SoundEngine: Web Audio API によるリッチな効果音
+       ========================================================================== */
     class SoundEngine {
       constructor() { this.ctx = null; this.enabled = true; }
       init() {
@@ -869,59 +1004,96 @@
           if (AudioCtx) this.ctx = new AudioCtx();
         }
       }
+      playTone(freq, type, duration, gainVal = 0.15) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(); osc.stop(this.ctx.currentTime + duration);
+        } catch(e){}
+      }
       playDraw() {
         if (!this.enabled || !this.ctx) return;
-        const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
-        osc.frequency.setValueAtTime(300, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-        osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.start(); osc.stop(this.ctx.currentTime + 0.08);
+        try {
+          const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+          osc.frequency.setValueAtTime(260, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(540, this.ctx.currentTime + 0.09);
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.09);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(); osc.stop(this.ctx.currentTime + 0.09);
+        } catch(e){}
       }
       playMyTurn() {
         if (!this.enabled || !this.ctx) return;
         const now = this.ctx.currentTime;
         [523.25, 659.25, 783.99].forEach((f, i) => {
-          const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
-          osc.frequency.value = f;
-          gain.gain.setValueAtTime(0.12, now + i * 0.08);
-          gain.gain.linearRampToValueAtTime(0.01, now + i * 0.08 + 0.2);
-          osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(now + i * 0.08); osc.stop(now + i * 0.08 + 0.2);
+          try {
+            const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+            osc.frequency.value = f;
+            gain.gain.setValueAtTime(0.12, now + i * 0.08);
+            gain.gain.linearRampToValueAtTime(0.01, now + i * 0.08 + 0.2);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.08); osc.stop(now + i * 0.08 + 0.2);
+          } catch(e){}
         });
       }
       playPlayCard() {
         if (!this.enabled || !this.ctx) return;
-        const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
-        osc.frequency.setValueAtTime(440, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(220, this.ctx.currentTime + 0.12);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
-        osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.start(); osc.stop(this.ctx.currentTime + 0.12);
+        try {
+          const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+          osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(220, this.ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(); osc.stop(this.ctx.currentTime + 0.12);
+        } catch(e){}
       }
       playExecute() {
         if (!this.enabled || !this.ctx) return;
-        const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(120, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-        osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+        try {
+          const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(35, this.ctx.currentTime + 0.35);
+          gain.gain.setValueAtTime(0.28, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(); osc.stop(this.ctx.currentTime + 0.35);
+        } catch(e){}
+      }
+      playReborn() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [440, 554.37, 659.25, 880, 1108.73].forEach((f, i) => {
+          try {
+            const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.value = f;
+            gain.gain.setValueAtTime(0.18, now + i * 0.09);
+            gain.gain.linearRampToValueAtTime(0.01, now + i * 0.09 + 0.3);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.09); osc.stop(now + i * 0.09 + 0.3);
+          } catch(e){}
+        });
       }
       playWin() {
         if (!this.enabled || !this.ctx) return;
         const now = this.ctx.currentTime;
         [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
-          const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
-          osc.frequency.value = f;
-          gain.gain.setValueAtTime(0.18, now + i * 0.1);
-          gain.gain.linearRampToValueAtTime(0.01, now + i * 0.1 + 0.4);
-          osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.4);
+          try {
+            const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+            osc.frequency.value = f;
+            gain.gain.setValueAtTime(0.18, now + i * 0.1);
+            gain.gain.linearRampToValueAtTime(0.01, now + i * 0.1 + 0.45);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.45);
+          } catch(e){}
         });
       }
     }
@@ -938,7 +1110,7 @@
       4: { rank: 4, name: "乙女", count: 2, sub: "守護", desc: "次の自分の手番まで相手のカード効果を受けない。" },
       5: { rank: 5, name: "死神", count: 2, sub: "疫病", desc: "相手に1枚引かせシャッフル。使用者が裏向きの2枚から1枚選んで捨てさせる（英雄は転生）。" },
       6: { rank: 6, name: "貴族", count: 2, sub: "対決", desc: "相手1人と手札を見せ合い、数字の小さい方が脱落（同数は両者脱落）。" },
-      7: { rank: 7, name: "賢者", count: 2, sub: "選択", desc: "次の自分の手番で山札から3枚引いて好きな1枚を選び、残りを山札へ戻す。" },
+      7: { rank: 7, name: "賢者", count: 2, sub: "選択", desc: "次の自分の手番で山札から3枚引いて好きな1枚を選び、残りを山札へ戻す。※効果発動後に転生しても次回発動可能！" },
       8: { rank: 8, name: "精霊", count: 2, sub: "交換", desc: "相手1人と手札を交換する。" },
       9: { rank: 9, name: "皇帝", count: 1, sub: "公開処刑", desc: "相手に1枚引かせ2枚とも公開。1枚処刑する。※英雄を処刑した場合は転生不可で即脱落！" },
       10: { rank: 10, name: "英雄", count: 1, sub: "潜伏・転生", desc: "場に出せない。皇帝以外で捨てられた場合、手札を全て捨てて転生札で復活。" }
@@ -963,10 +1135,19 @@
       activeTimers.forEach(id => clearTimeout(id));
       activeTimers.clear();
       if (autoReturnTimerId) { clearInterval(autoReturnTimerId); autoReturnTimerId = null; }
+      if (turnCountdownInterval) { clearInterval(turnCountdownInterval); turnCountdownInterval = null; }
     }
 
     const MY_ID = "usr_" + Date.now().toString(36) + "_" + Math.random().toString(36).substr(2, 6);
     let myName = "プレイヤー1";
+    let selectedHandCard = null; // 2ステップ操作用
+
+    // 手番タイマー管理（放置・切断対策）
+    let turnTimeRemaining = 45;
+    let turnCountdownInterval = null;
+
+    // AI思考排他制御フラグ
+    let isCpuThinking = false;
 
     let gameState = {
       hostId: "",
@@ -976,13 +1157,14 @@
       rebornCard: null,
       discardsAll: [],
       logs: [],
-      phase: "init", // init, action, busy, kenja_select, reaper_select, execute_select, duel_show, ended
+      phase: "init", // init, action, viewing, kenja_select, reaper_select, execute_select, duel_show, busy, ended
       pendingAction: null
     };
 
     let autoReturnTimerId = null;
     let heartbeatTimerId = null;
 
+    // DOM要素参照
     const lobbyScreen = document.getElementById("lobbyScreen");
     const waitingScreen = document.getElementById("waitingScreen");
     const gameScreen = document.getElementById("gameScreen");
@@ -991,9 +1173,13 @@
     const duelModal = document.getElementById("duelModal");
     const clairvoyanceModal = document.getElementById("clairvoyanceModal");
     const swapNoticeModal = document.getElementById("swapNoticeModal");
+    const reaperNoticeModal = document.getElementById("reaperNoticeModal");
     const gameOverModal = document.getElementById("gameOverModal");
     const endGameBtn = document.getElementById("endGameBtn");
     const playerNameInput = document.getElementById("playerNameInput");
+    const playConfirmBar = document.getElementById("playConfirmBar");
+    const confirmPlayBtn = document.getElementById("confirmPlayBtn");
+    const cancelSelectBtn = document.getElementById("cancelSelectBtn");
 
     const tabAiBtn = document.getElementById("tabAiBtn");
     const tabOnlineBtn = document.getElementById("tabOnlineBtn");
@@ -1023,7 +1209,7 @@
         }
       });
 
-      // タブ切り替え
+      // モード切り替えタブ
       tabAiBtn.onclick = () => {
         tabAiBtn.classList.add("active");
         tabOnlineBtn.classList.remove("active");
@@ -1067,6 +1253,22 @@
         document.getElementById("soundToggleBtn").innerText = sounds.enabled ? "🔊" : "🔇";
       };
 
+      // 2ステップ操作ボタン
+      confirmPlayBtn.onclick = () => {
+        if (selectedHandCard !== null) {
+          const c = selectedHandCard;
+          selectedHandCard = null;
+          playConfirmBar.classList.add("hidden");
+          renderMyHand();
+          requestPlayCard(c);
+        }
+      };
+      cancelSelectBtn.onclick = () => {
+        selectedHandCard = null;
+        playConfirmBar.classList.add("hidden");
+        renderMyHand();
+      };
+
       testAndSetImage(document.getElementById("playmat"), "mat.jpg");
       testAndSetImage(document.getElementById("deckVisual"), "card_back.jpg");
       testAndSetImage(document.getElementById("rebornCard"), "card_back.jpg");
@@ -1098,8 +1300,28 @@
       document.getElementById("ruleBtn").onclick = () => ruleModal.classList.remove("hidden");
       document.getElementById("closeRuleBtn").onclick = () => ruleModal.classList.add("hidden");
       document.getElementById("closeDuelBtn").onclick = () => duelModal.classList.add("hidden");
-      document.getElementById("closeClairvoyanceBtn").onclick = () => clairvoyanceModal.classList.add("hidden");
-      document.getElementById("closeSwapBtn").onclick = () => swapNoticeModal.classList.add("hidden");
+      
+      // 占師確認ボタン（手番を再開）
+      document.getElementById("closeClairvoyanceBtn").onclick = () => {
+        clairvoyanceModal.classList.add("hidden");
+        if (gameState.phase === "viewing") {
+          finishAction();
+        }
+      };
+
+      // 精霊確認ボタン（手番を再開）
+      document.getElementById("closeSwapBtn").onclick = () => {
+        swapNoticeModal.classList.add("hidden");
+        if (gameState.phase === "viewing") {
+          finishAction();
+        }
+      };
+
+      document.getElementById("closeReaperNoticeBtn").onclick = () => {
+        reaperNoticeModal.classList.add("hidden");
+      };
+
+      document.getElementById("trackerTitleHelp").onclick = () => ruleModal.classList.remove("hidden");
 
       document.getElementById("copyInviteUrlBtn").onclick = () => {
         const id = document.getElementById("displayRoomId").innerText;
@@ -1123,9 +1345,13 @@
       img.src = url;
     }
 
-    // ★完全初期化・クリーンアップ関数（ロビー戻り・再戦用）
+    /* ==========================================================================
+       完全初期化・クリーンアップ
+       ========================================================================== */
     function resetEntireDomAndState() {
       clearAllGameTimers();
+      selectedHandCard = null;
+      isCpuThinking = false;
 
       gameState.phase = "init";
       gameState.deck = [];
@@ -1141,8 +1367,9 @@
       document.getElementById("opponentsBar").innerHTML = "";
       document.getElementById("oppFieldContainer").innerHTML = "";
       document.getElementById("logBox").innerHTML = "";
-      document.getElementById("deckCountText").innerText = "18";
+      document.getElementById("deckCountText").innerText = "15";
       document.getElementById("rebornText").innerText = "転生札";
+      playConfirmBar.classList.add("hidden");
 
       gameOverModal.classList.add("hidden");
       actionModal.classList.add("hidden");
@@ -1150,6 +1377,7 @@
       duelModal.classList.add("hidden");
       clairvoyanceModal.classList.add("hidden");
       swapNoticeModal.classList.add("hidden");
+      reaperNoticeModal.classList.add("hidden");
     }
 
     function leaveToHome() {
@@ -1187,7 +1415,57 @@
       }
     }
 
-    /* ================= 通信（HiveMQ / マルチプレイ） ================= */
+    /* ==========================================================================
+       手番制限時間タイマー（放置・切断対策）
+       ========================================================================== */
+    function startTurnTimer() {
+      if (turnCountdownInterval) clearInterval(turnCountdownInterval);
+      turnTimeRemaining = 45;
+      document.getElementById("turnTimerSec").innerText = turnTimeRemaining;
+
+      turnCountdownInterval = setInterval(() => {
+        if (gameState.phase === "ended" || gameState.phase === "init") {
+          clearInterval(turnCountdownInterval);
+          return;
+        }
+
+        // 行動中かつ通常手番時のみカウントダウン
+        if (gameState.phase === "action") {
+          turnTimeRemaining--;
+          document.getElementById("turnTimerSec").innerText = Math.max(0, turnTimeRemaining);
+
+          if (turnTimeRemaining <= 0) {
+            clearInterval(turnCountdownInterval);
+            handleTurnTimeout();
+          }
+        }
+      }, 1000);
+    }
+
+    function handleTurnTimeout() {
+      const current = getCurrentPlayer();
+      if (!current || current.isEliminated) return;
+
+      addLog(`⏰ 時間切れ！${current.name} はカードを自動選択します。`, "danger");
+
+      if (current.id === MY_ID) {
+        // 自分の時間切れ：安全なカード（英雄以外）を自動プレイ
+        const playableCards = current.hand.filter(c => c !== 10);
+        const cardToPlay = playableCards.length > 0 ? playableCards[0] : current.hand[0];
+        
+        // ターゲットが必要な場合は適当に選択
+        const enemies = gameState.players.filter(p => p.id !== MY_ID && !p.isEliminated);
+        const target = enemies.length > 0 ? enemies[0] : null;
+        applyCard(MY_ID, cardToPlay, target ? target.id : null, { guessRank: 1 });
+      } else if (isHost && current.isCpu) {
+        // CPU時間切れ
+        executeCpuTurn(current);
+      }
+    }
+
+    /* ==========================================================================
+       通信（HiveMQ / マルチプレイ・Retain無効化＆堅牢化）
+       ========================================================================== */
     function enterRoom() {
       const customId = document.getElementById("customRoomIdInput").value.trim();
       if (!customId) return alert("合言葉を入力してください");
@@ -1200,7 +1478,8 @@
       lobbyScreen.classList.add("hidden");
       waitingScreen.classList.remove("hidden");
 
-      roomTopic = "xeno/v18/room_" + customId;
+      // トピック名（v20に変更し過去の残存retainゴミを完全回避）
+      roomTopic = "xeno/v20/room_" + customId;
 
       if (mqttClient) {
         try { mqttClient.end(true); } catch(e){}
@@ -1209,7 +1488,7 @@
       mqttClient = mqtt.connect("wss://broker.hivemq.com:8884/mqtt", {
         clientId: MY_ID,
         clean: true,
-        connectTimeout: 4000
+        connectTimeout: 5000
       });
 
       mqttClient.on("connect", () => {
@@ -1231,21 +1510,22 @@
       });
     }
 
+    // 【重要改修】retain = false で送信し、過去の試合終了データが部屋に居残るのを完全防止
     function sendMsg(msg, retain = false) {
       if (mqttClient && mqttClient.connected) {
-        mqttClient.publish(roomTopic, JSON.stringify(msg), { qos: 1, retain: retain });
+        mqttClient.publish(roomTopic, JSON.stringify(msg), { qos: 1, retain: false });
       }
     }
 
     function startHeartbeat() {
       if (heartbeatTimerId) clearInterval(heartbeatTimerId);
       heartbeatTimerId = setInterval(() => {
-        if (gameState.phase === "init" && gameMode === "online") {
+        if (gameMode === "online") {
           sendPresence();
         } else {
           clearInterval(heartbeatTimerId);
         }
-      }, 1500);
+      }, 2000);
     }
 
     function sendPresence() {
@@ -1254,7 +1534,8 @@
 
     function handleNetworkMessage(msg) {
       if (msg.type === "PRESENCE") {
-        if (!gameState.hostId) {
+        // ホスト未決定時、クライアントIDの辞書順最小で決定論的ホスト調停
+        if (!gameState.hostId || (gameState.phase === "init" && MY_ID < gameState.hostId && msg.id === MY_ID)) {
           gameState.hostId = MY_ID;
           isHost = true;
         }
@@ -1305,6 +1586,7 @@
           duelModal.classList.add("hidden");
           clairvoyanceModal.classList.add("hidden");
           swapNoticeModal.classList.add("hidden");
+          reaperNoticeModal.classList.add("hidden");
           waitingScreen.classList.remove("hidden");
           
           if (isHost) {
@@ -1319,20 +1601,21 @@
         }
 
         if (gameState.phase !== "init") {
-          if (heartbeatTimerId) clearInterval(heartbeatTimerId);
           waitingScreen.classList.add("hidden");
           gameScreen.classList.remove("hidden");
           endGameBtn.classList.remove("hidden");
         }
         renderGame();
-
         handlePhaseModals();
 
+        // 自分の手番が回ってきた時の演出
         if (getCurrentPlayer().id === MY_ID && prevTurn !== gameState.turnIndex && gameState.phase === "action") {
           sounds.playMyTurn();
+          startTurnTimer();
           if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
         } else if (prevPhase !== gameState.phase && gameState.phase === "action") {
           sounds.playDraw();
+          startTurnTimer();
         }
       }
 
@@ -1377,6 +1660,7 @@
         applyExecutionChoice(msg.executorId, msg.targetId, msg.chosenCard, msg.isEmperor);
       }
       else if (msg.type === "DUEL_SHOW") {
+        // 【重要改修】決闘当事者のみに互いの手札を表示し、第3者には公開しない
         if (msg.player1Id === MY_ID || msg.player2Id === MY_ID) {
           showDuelModal(msg);
         }
@@ -1387,12 +1671,15 @@
       else if (msg.type === "SWAP_NOTIFY" && msg.targetUserId === MY_ID) {
         showSwapReceivedModal(msg.senderName, msg.card);
       }
+      else if (msg.type === "REAPER_NOTIFY" && msg.targetUserId === MY_ID) {
+        showReaperNoticeModal(msg.discardedCard, msg.remainingCard);
+      }
     }
 
     function broadcastState() {
       if (gameMode === "online") {
         if (isHost) {
-          sendMsg({ type: "SYNC", state: gameState }, true);
+          sendMsg({ type: "SYNC", state: gameState }, false);
         }
       } else {
         renderGame();
@@ -1448,7 +1735,9 @@
       }
     }
 
-    /* ================= AI対戦モード初期化 ================= */
+    /* ==========================================================================
+       AI対戦モード初期化
+       ========================================================================== */
     function startAiGame() {
       resetEntireDomAndState();
 
@@ -1504,7 +1793,9 @@
       initNewDeckAndDeal();
     }
 
-    /* ================= ゲーム進行ロジック ================= */
+    /* ==========================================================================
+       ゲーム進行ロジック（公式ルール完全準拠）
+       ========================================================================== */
     function initNewDeckAndDeal() {
       clearAllGameTimers();
 
@@ -1517,7 +1808,10 @@
         [deck[i], deck[j]] = [deck[j], deck[i]];
       }
 
+      // 1枚を裏向きで「転生札」として除外
       gameState.rebornCard = deck.pop();
+
+      // 各プレイヤーに1枚ずつ配る
       gameState.players.forEach(p => {
         p.hand = [deck.pop()];
         p.discards = [];
@@ -1529,7 +1823,17 @@
 
       gameState.deck = deck;
       gameState.discardsAll = [];
-      gameState.logs = [gameMode === "ai" ? `AI対戦開始（${gameState.players.length}人戦 / 難易度:${aiDifficulty === "hard" ? "手強い" : "ノーマル"}）。1枚が転生札として除外されました。` : "ゲーム開始。1枚が転生札として除外されました。"];
+      
+      const pCount = gameState.players.length;
+      const initialDeckCount = deck.length; // 2人:15枚, 3人:14枚, 4人:13枚
+      document.getElementById("deckCountText").innerText = initialDeckCount;
+
+      gameState.logs = [
+        gameMode === "ai" 
+          ? `AI対戦開始（${pCount}人戦 / 難易度:${aiDifficulty === "hard" ? "手強い" : "ノーマル"}）。山札は${initialDeckCount}枚、1枚が転生札として除外されました。` 
+          : `ゲーム開始（${pCount}人戦）。山札は${initialDeckCount}枚、1枚が転生札として除外されました。`
+      ];
+
       gameState.turnIndex = 0;
       gameState.phase = "action";
       gameState.pendingAction = null;
@@ -1543,7 +1847,6 @@
       endGameBtn.classList.remove("hidden");
       gameOverModal.classList.add("hidden");
 
-      // 手番のセットアップ開始
       startTurn();
     }
 
@@ -1563,30 +1866,37 @@
       const current = getCurrentPlayer();
       if (current.isEliminated) { nextTurn(); return; }
 
-      // 手番開始時に自分の守護を解除
+      // 手番開始時に自身の守護を解除
       current.isProtected = false;
       addLog(`--- 【${current.name}】の手番 ---`);
 
-      // 既に手札が2枚ある場合（賢者ドロー後など）
+      // 【公式ルール】手番開始時に山札が0枚で、かつ手札が1枚以下の場合は手番を行わず終了判定
+      if (gameState.deck.length === 0 && current.hand.length < 2) {
+        addLog("山札が尽きているため、手札の強さ比べを行います。", "important");
+        endGameByDeckEmpty();
+        return;
+      }
+
+      // 既に手札が2枚ある場合（賢者後など）
       if (current.hand.length >= 2) {
         gameState.phase = "action";
         broadcastState();
+        startTurnTimer();
         return;
       }
 
       // 賢者の効果発動
       if (current.hasKenja) {
-        current.hasKenja = false;
+        current.hasKenja = false; // 発動消費
         const count = Math.min(3, gameState.deck.length);
         if (count === 0) {
-          gameState.phase = "action";
-          broadcastState();
+          endGameByDeckEmpty();
           return;
         }
 
         const drawn = [];
         for (let i = 0; i < count; i++) drawn.push(gameState.deck.pop());
-        addLog(`🔮【賢者発動】${current.name} は未来の3つの選択肢を見通す。`);
+        addLog(`🔮【賢者発動】${current.name} は未来の選択肢を見通す（${count}枚ドロー）。`, "important");
 
         gameState.phase = "kenja_select";
         gameState.pendingAction = {
@@ -1595,6 +1905,7 @@
           drawnCards: drawn
         };
         broadcastState();
+        startTurnTimer();
       } else {
         if (gameState.deck.length > 0) {
           const drawnCard = gameState.deck.pop();
@@ -1602,6 +1913,7 @@
         }
         gameState.phase = "action";
         broadcastState();
+        startTurnTimer();
       }
     }
 
@@ -1611,13 +1923,18 @@
       if (!player || !pending) return;
 
       const drawn = pending.drawnCards || [];
+      
+      // 【セキュリティ検証】選んだカードが引いた3枚に含まれているかを厳格チェック
+      const chosenIdx = drawn.indexOf(chosenCard);
+      const safeChosen = (chosenIdx !== -1) ? chosenCard : drawn[0];
+      const removeIdx = (chosenIdx !== -1) ? chosenIdx : 0;
+      drawn.splice(removeIdx, 1);
+
       if (player.hand.length < 2) {
-        player.hand.push(chosenCard);
+        player.hand.push(safeChosen);
       }
       
-      const chosenIdx = drawn.indexOf(chosenCard);
-      if (chosenIdx !== -1) drawn.splice(chosenIdx, 1);
-      
+      // 選ばれなかった残りを山札へ戻してシャッフル
       gameState.deck.push(...drawn);
       for (let i = gameState.deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1628,6 +1945,7 @@
       addLog(`${player.name} は選んだカードを手札に加え、残りを山札へ戻してシャッフルした。`);
       gameState.phase = "action";
       broadcastState();
+      startTurnTimer();
     }
 
     function nextTurn() {
@@ -1652,6 +1970,7 @@
       return count;
     }
 
+    // 他プレイヤーの手札変更時にAIの古い記憶を消去
     function clearCpuMemoryOf(playerId) {
       (gameState.players || []).forEach(p => {
         if (p.isCpu && p.memory && p.memory[playerId]) {
@@ -1660,16 +1979,44 @@
       });
     }
 
-    // ★カード出し要求（2番などモーダル対応）
+    // 全CPUの記憶を全消去（精霊での手札交換時など）
+    function clearAllCpuMemoryFor(p1Id, p2Id) {
+      (gameState.players || []).forEach(p => {
+        if (p.isCpu && p.memory) {
+          if (p.memory[p1Id]) delete p.memory[p1Id];
+          if (p.memory[p2Id]) delete p.memory[p2Id];
+        }
+      });
+    }
+
+    /* ==========================================================================
+       カード選択・発動（2ステップ誤タップ防止）
+       ========================================================================== */
+    function selectCardForPlay(cardRank) {
+      const current = getCurrentPlayer();
+      if (current.id !== MY_ID) return;
+      if (gameState.phase !== "action") return;
+      if (cardRank === 10) {
+        showCardPreview(10);
+        return;
+      }
+
+      selectedHandCard = cardRank;
+      playConfirmBar.classList.remove("hidden");
+      renderMyHand();
+      sounds.playDraw();
+    }
+
     function requestPlayCard(cardRank) {
       const current = getCurrentPlayer();
       if (current.id !== MY_ID) return;
-      if (gameState.phase !== "action") return; // 解決中は操作不可
+      if (gameState.phase !== "action") return;
       if (cardRank === 10) return alert("【10: 英雄】は自分から場に出すことはできません。");
 
       sounds.playPlayCard();
 
       const needTarget = [1, 2, 3, 5, 6, 8, 9];
+      // 少年2枚目判定：すでに捨て札に1枚以上出ている状態
       const alreadyBoyInField = (countDiscards(1) >= 1);
       const isSecondBoy = (cardRank === 1 && alreadyBoyInField);
 
@@ -1713,7 +2060,7 @@
     }
 
     function processCardPlay(playerId, cardRank, targetId, extra) {
-      // 処理開始：フェーズを busy にしてCPUや他者の二重行動を完全遮断
+      // 処理開始：フェーズを busy にして重複操作を遮断
       gameState.phase = "busy";
 
       const player = gameState.players.find(p => p.id === playerId);
@@ -1721,6 +2068,7 @@
 
       clearCpuMemoryOf(playerId);
 
+      // 少年の革命（2枚目判定）
       const alreadyBoyCount = countDiscards(1);
       const isSecondBoy = (cardRank === 1 && alreadyBoyCount >= 1);
 
@@ -1731,27 +2079,25 @@
 
       addLog(`${player.name} は【${cardRank}: ${CARDS[cardRank]?.name}】を使用した。`);
 
+      // 【公式ルール】山札0枚時の効果不発＆ゲーム終了判定（最優先）
+      if (([5, 9].includes(cardRank) || isSecondBoy) && gameState.deck.length === 0) {
+        addLog(`山札が0枚のため【${CARDS[cardRank]?.name}】の効果は不発。ゲーム終了となります。`, "danger");
+        renderGame();
+        addTimer(setTimeout(endGameByDeckEmpty, 1100));
+        return;
+      }
+
       // 守護チェック
       if (target && target.isProtected) {
-        addLog(`🛡️【乙女の守護】${target.name} は聖なる結界により効果を完全に防いだ！`);
+        addLog(`🛡️【乙女の守護】${target.name} は聖なる結界により効果を完全に防いだ！`, "important");
         finishAction();
         return;
       }
 
-      // 山札0枚チェック
-      if ([5, 9].includes(cardRank) || isSecondBoy) {
-        if (gameState.deck.length === 0) {
-          addLog(`山札が0枚のため【${CARDS[cardRank]?.name}】の効果は不発。ゲーム終了となります。`);
-          renderGame();
-          addTimer(setTimeout(endGameByDeckEmpty, 1000));
-          return;
-        }
-      }
-
       switch (cardRank) {
-        case 1:
+        case 1: // 少年
           if (isSecondBoy) {
-            addLog(`⚡ 革命発動！${target.name} を公開処刑する。`);
+            addLog(`⚡ 革命発動！${target.name} を公開処刑する。`, "important");
             executePublicExecution(player, target, false);
             return;
           } else {
@@ -1759,26 +2105,29 @@
           }
           break;
 
-        case 2:
+        case 2: // 兵士
           const guess = extra ? extra.guessRank : 1;
           addLog(`${player.name} は ${target.name} に【${guess}: ${CARDS[guess]?.name}】の捜査を宣言！`);
           if (target.hand.includes(guess)) {
             if (guess === 10) {
-              addLog(`捜査的中！しかし英雄は転生する！`);
+              addLog(`🎯 捜査的中！しかし英雄は奇跡の転生を遂げる！`, "important");
               executeReborn(target);
             } else {
               sounds.playExecute();
-              addLog(`🎯 捜査的中！${target.name} は手札【${guess}: ${CARDS[guess]?.name}】を公開して脱落した！`);
+              addLog(`🎯 捜査的中！${target.name} は手札【${guess}: ${CARDS[guess]?.name}】を公開して脱落した！`, "danger");
               eliminatePlayer(target);
               if (checkWinnerAfterElimination()) return;
             }
           } else {
-            addLog(`捜査は外れた。`);
+            addLog(`捜査は外れた。手札は一致しなかった。`);
           }
           break;
 
-        case 3:
+        case 3: // 占師
           addLog(`${player.name} は ${target.name} の手札を透視した。`);
+          gameState.phase = "viewing"; // 透視確認中フェーズ（手番進行を待機）
+          broadcastState();
+
           if (player.id === MY_ID) {
             showClairvoyanceModal(target.name, target.hand);
           } else if (gameMode === "online") {
@@ -1792,21 +2141,24 @@
           if (player.isCpu) {
             if (!player.memory) player.memory = {};
             player.memory[target.id] = target.hand[0];
+            // CPUの場合は1.2秒後に確認して手番終了
+            addTimer(setTimeout(() => { finishAction(); }, 1200));
+            return;
           }
-          break;
+          return;
 
-        case 4:
+        case 4: // 乙女
           player.isProtected = true;
-          addLog(`${player.name} は聖なる守護を得た。（次の自分の番まで効果を受けない）`);
+          addLog(`${player.name} は聖なる守護を得た。（次の自分の番まで効果を受けない）`, "important");
           break;
 
-        case 5:
+        case 5: // 死神
           const drawnCard = gameState.deck.pop();
           if (drawnCard !== undefined) {
             target.hand.push(drawnCard);
           }
           target.hand.sort(() => Math.random() - 0.5);
-          addLog(`死神の疫病！${player.name} は ${target.name} の裏向き手札から捨てるカードを選ぶ...`);
+          addLog(`💀 死神の疫病！${player.name} は ${target.name} の裏向き手札から捨てるカードを選ぶ...`);
           
           gameState.phase = "reaper_select";
           gameState.pendingAction = {
@@ -1818,8 +2170,8 @@
           broadcastState();
           return;
 
-        case 6:
-          addLog(`${player.name} と ${target.name} の決闘！`);
+        case 6: // 貴族
+          addLog(`⚔️ ${player.name} と ${target.name} の密かな決闘！`);
           const pVal = player.hand[0], tVal = target.hand[0];
           
           gameState.phase = "duel_show";
@@ -1829,6 +2181,7 @@
           };
           broadcastState();
 
+          // 決闘当事者にのみ相手のカードを開示
           if (gameMode === "online") {
             sendMsg({
               type: "DUEL_SHOW",
@@ -1848,17 +2201,17 @@
             duelModal.classList.add("hidden");
             if (pVal < tVal) {
               sounds.playExecute();
-              addLog(`決闘の敗北：${player.name} は手札【${pVal}: ${CARDS[pVal]?.name}】を公開して脱落！`);
+              addLog(`決闘の敗北：${player.name} は手札【${pVal}: ${CARDS[pVal]?.name}】を公開して脱落！`, "danger");
               eliminatePlayer(player);
               if (checkWinnerAfterElimination()) return;
             } else if (pVal > tVal) {
               sounds.playExecute();
-              addLog(`決闘の勝利：${target.name} は手札【${tVal}: ${CARDS[tVal]?.name}】を公開して脱落！`);
+              addLog(`決闘の敗北：${target.name} は手札【${tVal}: ${CARDS[tVal]?.name}】を公開して脱落！`, "danger");
               eliminatePlayer(target);
               if (checkWinnerAfterElimination()) return;
             } else {
               sounds.playExecute();
-              addLog(`相打ち！手札【${pVal}】で両者脱落！`);
+              addLog(`相打ち！数字【${pVal}】で両者脱落！`, "danger");
               eliminatePlayer(player);
               eliminatePlayer(target);
               if (checkWinnerAfterElimination()) return;
@@ -1868,21 +2221,31 @@
           }, 3200));
           return;
 
-        case 7:
+        case 7: // 賢者
           player.hasKenja = true;
-          addLog(`🔮【賢者予約】${player.name} は賢者の選択を予約した。（次の手番で3枚引いて選択）`);
+          addLog(`🔮【賢者予約】${player.name} は賢者の選択を予約した。（次の手番で3枚引いて選択）`, "important");
           break;
 
-        case 8:
-          addLog(`${player.name} と ${target.name} は手札を交換した。`);
+        case 8: // 精霊
+          addLog(`🕊️ ${player.name} と ${target.name} は手札を交換した。`);
           const tempP = [...player.hand];
           const tempT = [...target.hand];
           player.hand = tempT;
           target.hand = tempP;
 
-          if (target.id === MY_ID) {
+          // 手札交換により第三者CPUの記憶をクリア
+          clearAllCpuMemoryFor(player.id, target.id);
+
+          gameState.phase = "viewing"; // 交換確認待機
+          broadcastState();
+
+          if (player.id === MY_ID) {
+            showSwapReceivedModal(target.name, tempT[0]);
+          } else if (target.id === MY_ID) {
             showSwapReceivedModal(player.name, tempP[0]);
-          } else if (gameMode === "online") {
+          }
+
+          if (gameMode === "online") {
             sendMsg({
               type: "SWAP_NOTIFY",
               targetUserId: target.id,
@@ -1890,6 +2253,7 @@
               card: tempP[0]
             });
           }
+
           if (player.isCpu) {
             if (!player.memory) player.memory = {};
             player.memory[target.id] = tempP[0];
@@ -1898,10 +2262,15 @@
             if (!target.memory) target.memory = {};
             target.memory[player.id] = tempT[0];
           }
-          break;
 
-        case 9:
-          addLog(`皇帝の公開処刑！`);
+          if (player.isCpu && !player.isEliminated) {
+            addTimer(setTimeout(() => { finishAction(); }, 1200));
+            return;
+          }
+          return;
+
+        case 9: // 皇帝
+          addLog(`👑 皇帝の公開処刑！`);
           executePublicExecution(player, target, true);
           return;
       }
@@ -1916,15 +2285,30 @@
 
       clearCpuMemoryOf(targetId);
 
+      // 捨てさせるカードと残るカード
       const discarded = target.hand.splice(chosenIndex, 1)[0];
+      const remaining = target.hand[0];
+
       target.discards.push(discarded);
       gameState.discardsAll.push(discarded);
-      addLog(`${executor.name} は ${target.name} のカードを捨てさせた！【捨て札: ${discarded}: ${CARDS[discarded]?.name}】`);
+      addLog(`${executor.name} は ${target.name} の手札から1枚捨てさせた！【捨て札: ${discarded}: ${CARDS[discarded]?.name}】`, "important");
+
+      // 対象者への手札通知（何が捨てられ何が残ったか）
+      if (target.id === MY_ID) {
+        showReaperNoticeModal(discarded, remaining);
+      } else if (gameMode === "online") {
+        sendMsg({
+          type: "REAPER_NOTIFY",
+          targetUserId: target.id,
+          discardedCard: discarded,
+          remainingCard: remaining
+        });
+      }
 
       gameState.pendingAction = null;
 
       if (discarded === 10) {
-        addLog(`捨てられたのは英雄！英雄は転生する！`);
+        addLog(`捨てられたのは英雄！英雄は奇跡の力で転生する！`, "important");
         executeReborn(target);
       }
       finishAction();
@@ -1961,18 +2345,18 @@
       if (idx !== -1) target.hand.splice(idx, 1);
       target.discards.push(chosenCard);
       gameState.discardsAll.push(chosenCard);
-      addLog(`${executor.name} は ${target.name} の【${chosenCard}: ${CARDS[chosenCard]?.name}】を処刑した！`);
+      addLog(`${executor.name} は ${target.name} の【${chosenCard}: ${CARDS[chosenCard]?.name}】を処刑した！`, "danger");
 
       gameState.pendingAction = null;
 
       if (chosenCard === 10) {
         if (isEmperor) {
           sounds.playExecute();
-          addLog(`💀 皇帝の刃により英雄は討ち取られた！${target.name} は転生できず即脱落！`);
+          addLog(`💀 皇帝の刃により英雄は討ち取られた！${target.name} は転生できず即脱落！`, "danger");
           eliminatePlayer(target);
           if (checkWinnerAfterElimination()) return;
         } else {
-          addLog(`少年による処刑のため、英雄は転生する！`);
+          addLog(`少年による処刑のため、英雄は転生する！`, "important");
           executeReborn(target);
         }
       }
@@ -1988,6 +2372,7 @@
       return false;
     }
 
+    // 【公式ルール完全準拠】英雄の転生：手札をすべて捨ててから転生札を取得
     function executeReborn(player) {
       clearCpuMemoryOf(player.id);
       while (player.hand.length > 0) {
@@ -1998,9 +2383,10 @@
       if (gameState.rebornCard) {
         player.hand.push(gameState.rebornCard);
         gameState.rebornCard = null;
-        sounds.playWin();
-        addLog(`✨ ${player.name} は転生札を手に入れて復活した！`);
+        sounds.playReborn();
+        addLog(`✨ 奇跡の転生！${player.name} は転生札を手札に加えて復活した！`, "important");
       } else {
+        addLog(`転生札が存在しないため、${player.name} は復活できず脱落した！`, "danger");
         eliminatePlayer(player);
         checkWinnerAfterElimination();
       }
@@ -2017,30 +2403,39 @@
       }
     }
 
-    // ★手番終了時処理（ロック・山札チェック・ターン移行）
+    // 手番終了時処理（山札チェックとターン移行）
     function finishAction() {
       gameState.phase = "busy";
       renderGame();
 
-      // 山札が尽きた場合
+      // 【公式ルール】手番終了時に山札が残っていない場合、ゲーム終了
       if (gameState.deck.length === 0) {
-        addLog(`山札が尽きました！最終判定へ移ります。`);
+        addLog(`山札が尽きました！手札の数字比べへ移ります。`, "important");
         addTimer(setTimeout(endGameByDeckEmpty, 1100));
         return;
       }
 
       // 次の手番へ遷移
-      addTimer(setTimeout(nextTurn, 800));
+      addTimer(setTimeout(nextTurn, 750));
     }
 
-    /* ================= 決着＆全プレイヤー手札公開 ================= */
+    /* ==========================================================================
+       決着＆全プレイヤー手札公開
+       ========================================================================== */
     function endGameByLastAlive(winner) {
       clearAllGameTimers();
       gameState.phase = "ended";
       revealRebornAtEnd();
       sounds.playWin();
-      document.getElementById("gameOverTitle").innerText = winner ? `🏆 勝者：${winner.name}` : "引き分け（相打ち）";
-      document.getElementById("gameOverDesc").innerText = winner ? `他のプレイヤーが全員脱落しました！完全勝利！` : "全員が相打ち脱落しました。";
+
+      if (winner) {
+        document.getElementById("gameOverTitle").innerText = `🏆 勝者：${winner.name}`;
+        document.getElementById("gameOverDesc").innerText = `他のプレイヤーが全員脱落しました！完全勝利！`;
+      } else {
+        document.getElementById("gameOverTitle").innerText = "引き分け（相打ち）";
+        document.getElementById("gameOverDesc").innerText = `全員が相打ち脱落しました。`;
+      }
+      
       renderFinalHandsList();
       showGameOverAndStartTimer();
       renderGame();
@@ -2052,7 +2447,7 @@
       gameState.phase = "ended";
       revealRebornAtEnd();
       sounds.playWin();
-      addLog(`ゲーム終了！残った手札の数字比べ！`);
+      addLog(`ゲーム終了！残った手札の数字比べ！`, "important");
       
       const alive = gameState.players.filter(p => !p.isEliminated);
       alive.sort((a, b) => (b.hand[0] || 0) - (a.hand[0] || 0));
@@ -2061,11 +2456,11 @@
         document.getElementById("gameOverTitle").innerText = "引き分け（DRAW）";
         document.getElementById("gameOverDesc").innerText = `生存者がいませんでした。`;
       } else if (alive.length > 1 && alive[0].hand[0] === alive[1].hand[0]) {
-        document.getElementById("gameOverTitle").innerText = "引き分け（DRAW）";
-        document.getElementById("gameOverDesc").innerText = `最高数字【${alive[0].hand[0]}】で同点でした！`;
+        document.getElementById("gameOverTitle").innerText = "引き分け（同点DRAW）";
+        document.getElementById("gameOverDesc").innerText = `最高数字【${alive[0].hand[0]}: ${CARDS[alive[0].hand[0]]?.name}】で複数名が同点でした！`;
       } else {
         document.getElementById("gameOverTitle").innerText = `🏆 勝者：${alive[0].name}`;
-        document.getElementById("gameOverDesc").innerText = `手札【${alive[0].hand[0]}: ${CARDS[alive[0].hand[0]]?.name}】により勝利！`;
+        document.getElementById("gameOverDesc").innerText = `最強手札【${alive[0].hand[0]}: ${CARDS[alive[0].hand[0]]?.name}】により勝利！`;
       }
       renderFinalHandsList();
       showGameOverAndStartTimer();
@@ -2080,7 +2475,7 @@
         const row = document.createElement("div");
         row.className = "result-hand-row";
         const cardRank = p.hand[0];
-        const cardInfo = cardRank ? `【${cardRank}: ${CARDS[cardRank]?.name}】` : "（手札なし/脱落）";
+        const cardInfo = cardRank ? `【${cardRank}: ${CARDS[cardRank]?.name}】` : "（脱落/手札なし）";
         row.innerHTML = `
           <span><strong>${p.name}</strong> ${p.isEliminated ? "<small style='color:#ef4444;'>(脱落)</small>" : ""}</span>
           <span style="color:var(--gold-light); font-weight:bold;">${cardInfo}</span>
@@ -2105,6 +2500,7 @@
       duelModal.classList.add("hidden");
       clairvoyanceModal.classList.add("hidden");
       swapNoticeModal.classList.add("hidden");
+      reaperNoticeModal.classList.add("hidden");
 
       if (gameMode === "online") {
         document.getElementById("autoReturnTimer").classList.remove("hidden");
@@ -2124,7 +2520,6 @@
           }
         }, 1000);
       } else {
-        // AIモード：自動遷移なし。ゆっくり結果を確認して再戦可能
         if (autoReturnTimerId) clearInterval(autoReturnTimerId);
         document.getElementById("autoReturnTimer").classList.add("hidden");
         gameOverOnlineRow.classList.add("hidden");
@@ -2144,24 +2539,29 @@
         duelModal.classList.add("hidden");
         clairvoyanceModal.classList.add("hidden");
         swapNoticeModal.classList.add("hidden");
+        reaperNoticeModal.classList.add("hidden");
         waitingScreen.classList.remove("hidden");
       }
       startHeartbeat();
     }
 
-    /* ================= CPU（AI）思考エンジン ================= */
+    /* ==========================================================================
+       CPU（AI）思考エンジン（自殺防止・論理推論・排他制御）
+       ========================================================================== */
     function checkCpuAction() {
       if (gameMode !== "ai") return;
-      if (gameState.phase === "ended" || gameState.phase === "busy") return;
+      if (gameState.phase === "ended" || gameState.phase === "busy" || isCpuThinking) return;
 
       const current = getCurrentPlayer();
 
       // ① CPU通常手番
       if (gameState.phase === "action" && current.isCpu && !current.isEliminated) {
+        isCpuThinking = true;
         addTimer(setTimeout(() => {
           if (gameState.phase === "action" && getCurrentPlayer().id === current.id) {
             executeCpuTurn(current);
           }
+          isCpuThinking = false;
         }, 850));
         return;
       }
@@ -2172,10 +2572,12 @@
         if (p && p.userId) {
           const actor = gameState.players.find(pl => pl.id === p.userId);
           if (actor && actor.isCpu) {
+            isCpuThinking = true;
             addTimer(setTimeout(() => {
               if (gameState.phase === "kenja_select") {
                 executeCpuKenja(actor);
               }
+              isCpuThinking = false;
             }, 950));
             return;
           }
@@ -2188,10 +2590,12 @@
         if (p && p.executorId) {
           const actor = gameState.players.find(pl => pl.id === p.executorId);
           if (actor && actor.isCpu) {
+            isCpuThinking = true;
             addTimer(setTimeout(() => {
               if (gameState.phase === "reaper_select") {
                 executeCpuReaper(actor);
               }
+              isCpuThinking = false;
             }, 1000));
             return;
           }
@@ -2204,10 +2608,12 @@
         if (p && p.executorId) {
           const actor = gameState.players.find(pl => pl.id === p.executorId);
           if (actor && actor.isCpu) {
+            isCpuThinking = true;
             addTimer(setTimeout(() => {
               if (gameState.phase === "execute_select") {
                 executeCpuExecution(actor);
               }
+              isCpuThinking = false;
             }, 1100));
             return;
           }
@@ -2251,7 +2657,7 @@
       const isSecondBoy = (chosenCard === 1 && alreadyBoyInField);
 
       if (needTarget.includes(chosenCard) && (chosenCard !== 1 || isSecondBoy)) {
-        const target = selectCpuTarget(cpu, chosenCard);
+        const target = selectCpuTarget(cpu, chosenCard, otherCard);
         if (!target) {
           processCardPlay(cpu.id, chosenCard, null, null);
           return;
@@ -2298,11 +2704,12 @@
           break;
         case 5: score = gameState.deck.length > 0 ? 72 : 15; break;
         case 6:
-          if (otherCard >= 9) score = 110;
-          else if (otherCard === 8) score = 90;
+          // 貴族（決闘）：残す手札が強ければスコア大、弱ければ自殺なので超低スコア
+          if (otherCard >= 9) score = 120;
+          else if (otherCard === 8) score = 95;
           else if (otherCard === 7) score = 70;
-          else if (otherCard <= 5) score = 5;
-          else score = 40;
+          else if (otherCard <= 5) score = -50; // 自殺回避
+          else score = 30;
           break;
         case 7: score = gameState.deck.length >= 2 ? 80 : 35; break;
         case 8:
@@ -2320,20 +2727,41 @@
       return score;
     }
 
-    function selectCpuTarget(cpu, cardRank) {
+    // 【重要改修】貴族での自殺行動防止＆知っている手札を活用するターゲット選定
+    function selectCpuTarget(cpu, cardRank, otherCard) {
       const enemies = gameState.players.filter(p => p.id !== cpu.id && !p.isEliminated);
       if (enemies.length === 0) return null;
 
       const unprotected = enemies.filter(p => !p.isProtected);
       const pool = unprotected.length > 0 ? unprotected : enemies;
 
+      // 兵士（2）：手札を知っている相手を最優先で狙い撃ち
       if (cardRank === 2) {
         const known = pool.find(p => cpu.memory && cpu.memory[p.id]);
         if (known) return known;
       }
+
+      // 占師（3）：手札を知らない相手を優先
       if (cardRank === 3) {
         const unknown = pool.find(p => !(cpu.memory && cpu.memory[p.id]));
         if (unknown) return unknown;
+      }
+
+      // 貴族（6）：相手の手札を知っている場合、自分より強い相手は絶対に選ばない！
+      if (cardRank === 6) {
+        // 自分より確実に弱い相手を優先
+        const weaker = pool.find(p => cpu.memory && cpu.memory[p.id] && cpu.memory[p.id] < otherCard);
+        if (weaker) return weaker;
+
+        // 自分より強いと知っている相手は徹底除外
+        const safePool = pool.filter(p => !(cpu.memory && cpu.memory[p.id] && cpu.memory[p.id] >= otherCard));
+        if (safePool.length > 0) return safePool[Math.floor(Math.random() * safePool.length)];
+      }
+
+      // 精霊（8）：相手の手札を知っていて自分より強いなら交換指名
+      if (cardRank === 8) {
+        const stronger = pool.find(p => cpu.memory && cpu.memory[p.id] && cpu.memory[p.id] > otherCard);
+        if (stronger) return stronger;
       }
 
       const human = pool.find(p => !p.isCpu);
@@ -2342,6 +2770,7 @@
       return pool[Math.floor(Math.random() * pool.length)];
     }
 
+    // 【改修】兵士（捜査）の宣言論理推論（Hard難易度の英雄・皇帝推論）
     function guessCpuRank(cpu, target) {
       if (cpu.memory && cpu.memory[target.id]) {
         return cpu.memory[target.id];
@@ -2368,6 +2797,14 @@
       }
 
       if (aiDifficulty === "hard") {
+        // 終盤（山札が少ない）で相手の手札が出されていない場合、高ランク（10や9）を潜伏させている可能性を推論
+        if (gameState.deck.length <= 4 && availableRanks.includes(10) && Math.random() < 0.45) {
+          return 10;
+        }
+        if (gameState.deck.length <= 4 && availableRanks.includes(9) && Math.random() < 0.4) {
+          return 9;
+        }
+
         const rankFreq = {};
         availableRanks.forEach(r => { rankFreq[r] = (rankFreq[r] || 0) + 1; });
         let bestR = availableRanks[0], maxF = 0;
@@ -2388,6 +2825,7 @@
       if (!p || !p.drawnCards) return;
       const drawn = p.drawnCards;
 
+      // 手札とのシナジーを考慮した優先度
       const priority = [10, 9, 4, 7, 6, 5, 2, 8, 1, 3];
       drawn.sort((a, b) => priority.indexOf(a) - priority.indexOf(b));
       const chosen = drawn[0];
@@ -2409,9 +2847,10 @@
 
       let chosen;
       if (p.isEmperor) {
-        if (cards.includes(10)) chosen = 10;
+        if (cards.includes(10)) chosen = 10; // 皇帝は英雄を即死処刑
         else chosen = Math.max(...cards);
       } else {
+        // 少年は英雄を処刑すると転生されてしまうため、英雄以外を優先
         if (cards.includes(10) && cards.some(c => c !== 10)) {
           chosen = cards.find(c => c !== 10);
         } else {
@@ -2422,7 +2861,9 @@
       applyExecutionChoice(cpu.id, p.targetId, chosen, p.isEmperor);
     }
 
-    /* ================= 待機モーダルハンドラ ================= */
+    /* ==========================================================================
+       待機モーダルハンドラ
+       ========================================================================== */
     function handlePhaseModals() {
       if (gameState.phase === "kenja_select") {
         const p = gameState.pendingAction;
@@ -2477,7 +2918,9 @@
       }
     }
 
-    /* ================= UI描画 ================= */
+    /* ==========================================================================
+       UI描画（正位置捨て札・レスポンシブ・トラッカー）
+       ========================================================================== */
     function renderGame() {
       document.getElementById("deckCountText").innerText = gameState.deck ? gameState.deck.length : 0;
       
@@ -2499,7 +2942,7 @@
 
       const logBox = document.getElementById("logBox");
       logBox.innerHTML = "";
-      (gameState.logs || []).slice(-6).reverse().forEach(log => {
+      (gameState.logs || []).slice(-7).reverse().forEach(log => {
         const div = document.createElement("div");
         div.className = "log-entry";
         div.innerText = log;
@@ -2526,7 +2969,7 @@
       document.getElementById("myGuardBadge").classList.toggle("hidden", !me.isProtected);
       document.getElementById("myKenjaBadge").classList.toggle("hidden", !me.hasKenja);
 
-      // ★推理アシスト：未公開カード残数ボードの更新
+      // 推理アシスト：残りカードトラッカー
       renderCardTracker();
 
       // 自分の捨て札
@@ -2536,23 +2979,13 @@
         const cardEl = createCardElem(c, true);
         cardEl.classList.add("my-discard-card");
         cardEl.style.zIndex = idx + 1;
+        cardEl.title = `【${c}: ${CARDS[c]?.name}】`;
+        cardEl.onclick = () => showCardPreview(c);
         myDiscardLane.appendChild(cardEl);
       });
 
-      // 自分の手札
-      const myHand = document.getElementById("myHand");
-      myHand.innerHTML = "";
-      (me.hand || []).forEach(c => {
-        const el = createCardElem(c, false);
-        el.oncontextmenu = (e) => { e.preventDefault(); showCardPreview(c); };
-        
-        if (!isMyTurn || c === 10) {
-          el.classList.add("disabled");
-        } else {
-          el.onclick = () => requestPlayCard(c);
-        }
-        myHand.appendChild(el);
-      });
+      // 自分の手札（2ステップ操作対応）
+      renderMyHand();
 
       // 相手情報バー
       const oppBar = document.getElementById("opponentsBar");
@@ -2567,33 +3000,66 @@
         box.innerHTML = `
           <span class="opp-name">${opp.name || "対戦相手"}${cpuTag} ${opp.isProtected ? "🛡️" : ""} ${opp.hasKenja ? "🔮" : ""} ${isOppTurn ? "★" : ""}</span>
           <div class="opp-cards">
-            ${Array.from({ length: handCount }).map(() => `<div class="card-mini card-back" style="width:20px; height:30px;"></div>`).join("")}
+            ${Array.from({ length: handCount }).map(() => `<div class="card-mini card-back" style="width:18px; height:28px;"></div>`).join("")}
           </div>
         `;
         oppBar.appendChild(box);
       });
 
-      // 相手の捨て札
+      // 相手の捨て札（改修：正位置で美しく並べる）
       const oppFieldContainer = document.getElementById("oppFieldContainer");
       oppFieldContainer.innerHTML = "";
       opponents.forEach(opp => {
         const lane = document.createElement("div");
         lane.className = "player-discard-lane";
         const cpuLabel = opp.isCpu ? " (AI)" : "";
-        lane.innerHTML = `<div class="lane-label">${opp.name || "相手"}${cpuLabel} の捨て札</div><div class="lane-cards" id="lane-cards-${opp.id}"></div>`;
+        lane.innerHTML = `
+          <div class="lane-label">${opp.name || "相手"}${cpuLabel} の捨て札 (${(opp.discards || []).length}枚)</div>
+          <div class="lane-cards" id="lane-cards-${opp.id}"></div>
+        `;
         const cardsBox = lane.querySelector(`#lane-cards-${opp.id}`);
         
         (opp.discards || []).forEach((c, idx) => {
           const cardEl = createCardElem(c, true);
           cardEl.classList.add("opp-discard-card");
           cardEl.style.zIndex = idx + 1;
+          cardEl.title = `【${c}: ${CARDS[c]?.name}】`;
+          cardEl.onclick = () => showCardPreview(c);
           cardsBox.appendChild(cardEl);
         });
         oppFieldContainer.appendChild(lane);
       });
     }
 
-    // ★推理アシスト：未公開カード一覧カウンター描画
+    function renderMyHand() {
+      const myHand = document.getElementById("myHand");
+      myHand.innerHTML = "";
+
+      const me = gameState.players.find(p => p.id === MY_ID) || gameState.players[0] || { hand: [] };
+      const currentP = getCurrentPlayer();
+      const isMyTurn = (currentP.id === me.id && gameState.phase === "action" && !me.isEliminated);
+
+      (me.hand || []).forEach(c => {
+        const el = createCardElem(c, false);
+        el.oncontextmenu = (e) => { e.preventDefault(); showCardPreview(c); };
+
+        if (selectedHandCard === c) {
+          el.classList.add("selected");
+        }
+        
+        if (!isMyTurn || c === 10) {
+          el.classList.add("disabled");
+          if (c === 10) {
+            el.onclick = () => showCardPreview(10);
+          }
+        } else {
+          el.onclick = () => selectCardForPlay(c);
+        }
+        myHand.appendChild(el);
+      });
+    }
+
+    // 推理アシスト：未公開カード一覧カウンター描画（クリックで効果説明）
     function renderCardTracker() {
       const container = document.getElementById("trackerItems");
       if (!container) return;
@@ -2613,9 +3079,10 @@
         item.className = `tracker-item ${count === 0 ? "exhausted" : ""}`;
         item.innerHTML = `
           <span class="tracker-rank">${r}</span>
-          <span class="tracker-count">${count}枚</span>
+          <span class="tracker-count">${count}</span>
         `;
-        item.title = `【${r}: ${CARDS[r].name}】 残り: ${count}/${CARDS[r].count}枚`;
+        item.title = `【${r}: ${CARDS[r].name}】 残り: ${count}/${CARDS[r].count}枚 (クリックで能力確認)`;
+        item.onclick = () => showCardPreview(r);
         container.appendChild(item);
       }
     }
@@ -2641,12 +3108,15 @@
       return card;
     }
 
-    function addLog(msg) {
+    function addLog(msg, type = "") {
       if (!gameState.logs) gameState.logs = [];
       gameState.logs.push(msg);
       renderGame();
     }
 
+    /* ==========================================================================
+       各種モーダル表示関数
+       ========================================================================== */
     function showReaperChoiceModal(targetName, onSelectIndex) {
       actionModal.classList.remove("hidden");
       actionModal.classList.remove("user-opened");
@@ -2687,6 +3157,19 @@
       document.getElementById("modalActions").innerHTML = "";
     }
 
+    function showReaperNoticeModal(discardedCard, remainingCard) {
+      reaperNoticeModal.classList.remove("hidden");
+      document.getElementById("reaperNoticeDesc").innerText = `死神の効果により、あなたの手札から1枚が選ばれて捨てられました！`;
+      
+      const discBox = document.getElementById("reaperDiscardedCardBox");
+      discBox.innerHTML = "";
+      discBox.appendChild(createCardElem(discardedCard, false));
+
+      const remBox = document.getElementById("reaperRemainingCardBox");
+      remBox.innerHTML = "";
+      remBox.appendChild(createCardElem(remainingCard, false));
+    }
+
     function showDuelModal(data) {
       duelModal.classList.remove("hidden");
       document.getElementById("duelDesc").innerText = `${data.player1Name} vs ${data.player2Name}`;
@@ -2717,7 +3200,7 @@
 
     function showSwapReceivedModal(senderName, card) {
       swapNoticeModal.classList.remove("hidden");
-      document.getElementById("swapNoticeDesc").innerText = `${senderName} と精霊で手札を交換しました！受け取ったカード：`;
+      document.getElementById("swapNoticeDesc").innerText = `${senderName} と精霊で手札を交換しました！新しく手札に加わったカード：`;
       const box = document.getElementById("swapReceivedCardBox");
       box.innerHTML = "";
       box.appendChild(createCardElem(card, false));
@@ -2754,18 +3237,17 @@
       actionModal.classList.remove("hidden");
       actionModal.classList.add("user-opened");
       document.getElementById("modalTitle").innerText = `【${rank}: ${CARDS[rank].name}】`;
-      document.getElementById("modalDesc").innerText = `能力：${CARDS[rank].sub}`;
+      document.getElementById("modalDesc").innerText = `能力：${CARDS[rank].sub}（全${CARDS[rank].count}枚）`;
       const body = document.getElementById("modalBody");
       body.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center;">
           <div>${createCardElem(rank, false).outerHTML}</div>
-          <div style="font-size:13px; color:#cbd5e0; line-height:1.6;">${CARDS[rank].desc}</div>
+          <div style="font-size:13px; color:#cbd5e0; line-height:1.6; max-width:320px;">${CARDS[rank].desc}</div>
         </div>
       `;
       document.getElementById("modalActions").innerHTML = `<button class="btn btn-secondary" onclick="actionModal.classList.add('hidden'); actionModal.classList.remove('user-opened');">閉じる</button>`;
     }
 
-    // ★ターゲット選択モーダル（2番など確実に動作するよう修正）
     function showTargetSelectModal(cardRank, targetPlayers, onSelect) {
       actionModal.classList.remove("hidden");
       actionModal.classList.add("user-opened");
@@ -2796,7 +3278,6 @@
       document.getElementById("modalActions").innerHTML = `<button class="btn btn-secondary" onclick="actionModal.classList.add('hidden'); actionModal.classList.remove('user-opened');">キャンセル</button>`;
     }
 
-    // ★兵士推理宣言モーダル（1〜10）
     function showGuessRankModal(targetName, onGuess) {
       document.getElementById("modalTitle").innerText = `【兵士：捜査】`;
       document.getElementById("modalDesc").innerText = `${targetName} の手札を推理して宣言してください（1〜10）`;
